@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    // Versión de JS a la que apunta el chequeo (features modernas de Node 24).
+    "target": "ES2022",
+    "lib": ["ES2022"],
+
+    // NodeNext = usa el sistema de módulos ESM moderno de Node (import/export)
+    // y respeta el campo "exports" de los package.json.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // El interruptor pedagógico clave: TS te obliga a tipar todo bien.
+    // Molesta al principio, pero es justo el músculo que venimos a entrenar.
+    "strict": true,
+
+    // Chequeos extra de calidad, arriba de strict.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // No emitimos JS: corremos el TS directo con tsx. Esto es solo type-check.
+    "noEmit": true,
+
+    // Higiene de siempre.
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  }
+}

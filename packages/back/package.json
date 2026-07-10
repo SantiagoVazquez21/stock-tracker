@@ -1,0 +1,12 @@
+{
+  "name": "@stock-tracker/back",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@stock-tracker/shared": "*"
+  }
+}

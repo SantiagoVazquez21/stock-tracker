@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+
+# Salidas de build (por ahora no compilamos, pero por las dudas)
+dist/
+*.tsbuildinfo
+
+# Variables de entorno (API keys, etc. — nunca al repo)
+.env
+.env.*
+!.env.example
+
+# Logs y basura del SO
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
