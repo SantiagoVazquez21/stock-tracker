@@ -5,10 +5,11 @@
     "target": "ES2022",
     "lib": ["ES2022"],
 
-    // NodeNext = usa el sistema de módulos ESM moderno de Node (import/export)
-    // y respeta el campo "exports" de los package.json.
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    // Corremos el código con tsx/vitest (estilo bundler), NUNCA compilamos con tsc.
+    // Por eso resolvemos módulos "como bundler": imports ESM sin tener que escribir
+    // la extensión del archivo, y respetando el campo "exports" de los package.json.
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
 
     // El interruptor pedagógico clave: TS te obliga a tipar todo bien.
     // Molesta al principio, pero es justo el músculo que venimos a entrenar.
