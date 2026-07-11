@@ -1,6 +1,15 @@
-// "Hello TS" del back. Solo sirve para verificar que la cadena entera corre:
-//   TypeScript  ->  tsx (lo ejecuta sin compilar)  ->  import desde @stock-tracker/shared
-// Importar SHARED_OK prueba que npm workspaces cableó bien el paquete shared.
-import { SHARED_OK } from "@stock-tracker/shared";
+process.loadEnvFile();
+import {createFinnhubSource} from "./providers/finnhub";
 
-console.log(`Hello TS 👋  — ${SHARED_OK}`);
+const apiKey = process.env.FINNHUB_API_KEY;
+
+if (!apiKey) {
+    console.error("❌ Falta FINNHUB_API_KEY en packages/back/.env");
+    process.exit(1);
+}
+
+console.log(`✅ API key de Finnhub cargada (${apiKey.length} caracteres)`);
+
+const finnhub = createFinnhubSource(apiKey);
+const quote = await finnhub.getQuote("AAPL");
+console.log(quote);
