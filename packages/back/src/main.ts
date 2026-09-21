@@ -14,4 +14,8 @@ if (!apiKey) {
 const source = createTwelveDataSource(apiKey);
 
 const quote = await source.getQuote("AAPL");
-console.log(quote);
+console.log("Quote:", quote);
+
+const history = await source.getHistory("AAPL", "1W");
+console.log(`\nHistorial (${history.length} velas, viejo → nuevo):`);
+console.table(history);
