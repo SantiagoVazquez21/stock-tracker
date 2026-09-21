@@ -1,15 +1,17 @@
+import { createTwelveDataSource } from "./providers/twelvedata";
+
+// Carga packages/back/.env dentro de process.env (nativo de Node 24).
 process.loadEnvFile();
-import {createFinnhubSource} from "./providers/finnhub";
 
-const apiKey = process.env.FINNHUB_API_KEY;
-
+const apiKey = process.env.TWELVE_DATA_API_KEY;
 if (!apiKey) {
-    console.error("❌ Falta FINNHUB_API_KEY en packages/back/.env");
-    process.exit(1);
+  console.error("❌ Falta TWELVE_DATA_API_KEY en packages/back/.env");
+  process.exit(1);
 }
 
-console.log(`✅ API key de Finnhub cargada (${apiKey.length} caracteres)`);
+// Se llama "source" (genérico), no "twelveData": main elige el proveedor, y el
+// resto del programa habla con un MarketDataSource sin saber cuál es.
+const source = createTwelveDataSource(apiKey);
 
-const finnhub = createFinnhubSource(apiKey);
-const quote = await finnhub.getQuote("AAPL");
+const quote = await source.getQuote("AAPL");
 console.log(quote);

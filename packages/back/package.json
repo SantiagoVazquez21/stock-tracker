@@ -7,6 +7,7 @@
     "dev": "tsx src/main.ts"
   },
   "dependencies": {
-    "@stock-tracker/shared": "*"
+    "@stock-tracker/shared": "*",
+    "zod": "^4.6.5"
   }
 }
