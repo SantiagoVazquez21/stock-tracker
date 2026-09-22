@@ -1,0 +1,38 @@
+// Esquema de la base de datos. Prisma lee esto para (1) generar un cliente
+// TypeScript tipado y (2) crear/versionar las tablas vía migraciones.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Conexión "pooled" (puerto 6543) para las consultas normales de la app.
+  url      = env("DATABASE_URL")
+  // Conexión DIRECTA (puerto 5432) que Prisma usa para las MIGRACIONES.
+  // El pooler transaccional (6543) no sirve para migrar; por eso Supabase
+  // te da las dos URLs.
+  directUrl = env("DIRECT_URL")
+}
+
+// Lo que el usuario elige seguir. En modo single-user, cada símbolo se sigue
+// una sola vez (@unique). Cuando haya login, esto pasará a @@unique([userId, symbol]).
+model Watch {
+  id        Int      @id @default(autoincrement())
+  symbol    String   @unique
+  name      String
+  startedAt DateTime @default(now())
+}
+
+// El cierre diario de cada símbolo: la serie temporal que alimenta el gráfico
+// y el cálculo del "% desde que empecé". Es GLOBAL por símbolo (no por usuario):
+// el cierre de AAPL del 21-sep es el mismo para todos, no se duplica.
+// @@unique([symbol, date]) garantiza un solo registro por símbolo y día.
+model PricePoint {
+  id     Int      @id @default(autoincrement())
+  symbol String
+  date   DateTime @db.Date
+  close  Float
+
+  @@unique([symbol, date])
+}

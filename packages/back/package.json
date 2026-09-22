@@ -7,7 +7,11 @@
     "dev": "tsx src/main.ts"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "@stock-tracker/shared": "*",
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.3"
   }
 }
