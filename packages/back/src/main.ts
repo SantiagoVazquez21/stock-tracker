@@ -1,6 +1,7 @@
 import { createTwelveDataSource } from "./providers/twelvedata";
+import { addWatch, getStoredHistory, listWatches } from "./watchlist";
+import { prisma } from "./db";
 
-// Carga packages/back/.env dentro de process.env (nativo de Node 24).
 process.loadEnvFile();
 
 const apiKey = process.env.TWELVE_DATA_API_KEY;
@@ -9,13 +10,22 @@ if (!apiKey) {
   process.exit(1);
 }
 
-// Se llama "source" (genérico), no "twelveData": main elige el proveedor, y el
-// resto del programa habla con un MarketDataSource sin saber cuál es.
 const source = createTwelveDataSource(apiKey);
 
-const quote = await source.getQuote("AAPL");
-console.log("Quote:", quote);
+// Agregar a la watchlist + backfill del último mes.
+const { watch, savedPricePoints } = await addWatch(source, "AAPL", "1M");
+console.log(`Watch "${watch.symbol}": ${savedPricePoints} PricePoints nuevos guardados.`);
 
-const history = await source.getHistory("AAPL", "1W");
-console.log(`\nHistorial (${history.length} velas, viejo → nuevo):`);
-console.table(history);
+// Leer de la DB lo que quedó guardado (no de la API).
+const history = await getStoredHistory("AAPL");
+console.log(`\nHistorial en la DB (${history.length} puntos, últimos 5):`);
+console.table(history.slice(-5));
+
+const watches = await listWatches();
+console.log(
+  "\nWatchlist:",
+  watches.map((w) => w.symbol),
+);
+
+// Cerrar la conexión para que el proceso termine limpio.
+await prisma.$disconnect();
