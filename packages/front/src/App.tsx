@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { AddWatchForm } from "./components/AddWatchForm";
 import { WatchList } from "./components/WatchList";
+import { PriceChart } from "./components/PriceChart";
 
 export function App() {
+  // Qué símbolo está seleccionado para ver su gráfico (null = ninguno).
+  const [selected, setSelected] = useState<string | null>(null);
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-2xl px-4 py-10">
@@ -13,7 +18,8 @@ export function App() {
         </header>
 
         <AddWatchForm />
-        <WatchList />
+        <WatchList selected={selected} onSelect={setSelected} />
+        {selected && <PriceChart symbol={selected} />}
       </div>
     </div>
   );
