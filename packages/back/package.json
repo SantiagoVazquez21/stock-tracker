@@ -9,6 +9,7 @@
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@stock-tracker/shared": "*",
+    "fastify": "^5.12.5",
     "zod": "^4.6.5"
   },
   "devDependencies": {
