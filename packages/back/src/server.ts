@@ -1,17 +1,52 @@
 import Fastify from "fastify";
+import { z } from "zod";
+import type { MarketDataSource } from "@stock-tracker/shared";
+import { addWatch, getStoredHistory, listWatches } from "./watchlist";
 
-// Arma el servidor y devuelve la app SIN levantarla (sin .listen()). Separar el
-// "armar" del "escuchar" permite testear las rutas con app.inject() —pedidos
-// simulados en memoria, sin abrir un puerto real— en la próxima etapa.
-export function buildServer(options: { logger?: boolean } = {}) {
-  // Logger prendido por defecto (producción/dev), pero se puede apagar en los
-  // tests para que no ensucien la salida ni se pongan lentos.
+// Valida el body del POST /watches. .trim() saca espacios, .min(1) exige que no
+// esté vacío, .toUpperCase() normaliza el ticker ("aapl" -> "AAPL").
+const AddWatchBody = z.object({
+  symbol: z.string().trim().min(1).toUpperCase(),
+});
+
+// Arma el servidor y devuelve la app SIN levantarla (sin .listen()). Recibe el
+// `source` inyectado: la API no sabe qué proveedor es, solo lo usa.
+export function buildServer(options: { source: MarketDataSource; logger?: boolean }) {
+  const { source } = options;
   const app = Fastify({ logger: options.logger ?? true });
 
-  // Healthcheck: sirve para confirmar que el server está vivo (lo usan los
-  // servicios de deploy para saber si la app arrancó bien).
+  // Healthcheck: confirma que el server está vivo.
   app.get("/health", async () => {
     return { status: "ok" };
+  });
+
+  // Lista la watchlist (lee de la DB, no de la API).
+  app.get("/watches", async () => {
+    return listWatches();
+  });
+
+  // Agrega un símbolo a la watchlist + backfill de su historial.
+  app.post("/watches", async (request, reply) => {
+    const parsed = AddWatchBody.safeParse(request.body);
+    if (!parsed.success) {
+      // Input inválido: 400 y le decimos al cliente qué estuvo mal.
+      return reply.code(400).send({ error: "Body inválido", details: parsed.error.issues });
+    }
+
+    try {
+      const result = await addWatch(source, parsed.data.symbol);
+      return reply.code(201).send(result); // 201 = creado
+    } catch (err) {
+      // Falló el proveedor externo (símbolo inexistente, rate limit, etc.).
+      request.log.error(err);
+      return reply.code(502).send({ error: `No se pudo agregar ${parsed.data.symbol}` });
+    }
+  });
+
+  // Historial guardado de un símbolo (para el gráfico).
+  app.get<{ Params: { symbol: string } }>("/watches/:symbol/history", async (request) => {
+    const symbol = request.params.symbol.toUpperCase();
+    return getStoredHistory(symbol);
   });
 
   return app;
