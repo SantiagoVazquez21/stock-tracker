@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import { z } from "zod";
 import type { MarketDataSource } from "@stock-tracker/shared";
-import { addWatch, getStoredHistory, listWatches } from "./watchlist";
+import { addWatch, getStoredHistory, getWatchlistSummary } from "./watchlist";
 
 // Valida el body del POST /watches. .trim() saca espacios, .min(1) exige que no
 // esté vacío, .toUpperCase() normaliza el ticker ("aapl" -> "AAPL").
@@ -20,9 +20,9 @@ export function buildServer(options: { source: MarketDataSource; logger?: boolea
     return { status: "ok" };
   });
 
-  // Lista la watchlist (lee de la DB, no de la API).
+  // Lista la watchlist con el "% desde que empecé" (todo desde la DB).
   app.get("/watches", async () => {
-    return listWatches();
+    return getWatchlistSummary();
   });
 
   // Agrega un símbolo a la watchlist + backfill de su historial.
