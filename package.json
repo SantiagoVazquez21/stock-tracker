@@ -8,9 +8,10 @@
   ],
   "scripts": {
     "dev:back": "npm run dev --workspace @stock-tracker/back",
+    "dev:front": "npm run dev --workspace @stock-tracker/front",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p packages/shared && tsc -p packages/back"
+    "typecheck": "tsc -p packages/shared && tsc -p packages/back && tsc -p packages/front"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
