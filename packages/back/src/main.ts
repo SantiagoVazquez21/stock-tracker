@@ -15,7 +15,9 @@ if (!apiKey) {
 const source = createTwelveDataSource(apiKey);
 const app = buildServer({ source });
 
-const port = Number(process.env.PORT ?? 3000);
+// 3001 por default en local (el 3000 lo usa otro proyecto). En deploy, la
+// plataforma inyecta PORT y ese manda.
+const port = Number(process.env.PORT ?? 3001);
 
 try {
   await app.listen({ port });

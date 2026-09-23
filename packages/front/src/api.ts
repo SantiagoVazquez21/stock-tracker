@@ -2,7 +2,7 @@ import type { WatchSummary, HistoryPoint } from "@stock-tracker/shared";
 
 // La URL del back. Configurable por entorno (Vite expone las vars VITE_*),
 // con localhost:3000 como default en desarrollo.
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 // Helper genérico: hace el fetch, chequea el status y devuelve el JSON tipado.
 // El <T> es el tipo esperado de la respuesta — cada función de abajo lo fija.
