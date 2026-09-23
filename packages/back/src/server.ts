@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import { z } from "zod";
 import type { MarketDataSource } from "@stock-tracker/shared";
 import { addWatch, getStoredHistory, getWatchlistSummary } from "./watchlist";
@@ -14,6 +15,12 @@ const AddWatchBody = z.object({
 export function buildServer(options: { source: MarketDataSource; logger?: boolean }) {
   const { source } = options;
   const app = Fastify({ logger: options.logger ?? true });
+
+  // CORS: el front corre en otro origen (puerto distinto) y el navegador, por
+  // seguridad, bloquea esos pedidos salvo que el server los autorice. origin:true
+  // refleja el origen que pide (cómodo en dev). En producción: restringir al
+  // dominio real del front.
+  app.register(cors, { origin: true });
 
   // Healthcheck: confirma que el server está vivo.
   app.get("/health", async () => {

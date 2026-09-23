@@ -26,4 +26,22 @@ describe("GET /health", () => {
 
     await app.close();
   });
+
+  it("devuelve el header CORS que autoriza al front", async () => {
+    const app = buildServer({ source: fakeSource, logger: false });
+
+    // Simulamos un pedido desde el origen del front. Con CORS bien configurado,
+    // el back responde autorizando ese origen.
+    const res = await app.inject({
+      method: "GET",
+      url: "/health",
+      headers: { origin: "http://localhost:5174" },
+    });
+
+    expect(res.headers["access-control-allow-origin"]).toBe(
+      "http://localhost:5174",
+    );
+
+    await app.close();
+  });
 });

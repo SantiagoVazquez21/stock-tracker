@@ -1,4 +1,9 @@
-import type { MarketDataSource, Range } from "@stock-tracker/shared";
+import type {
+  MarketDataSource,
+  Range,
+  WatchSummary,
+  HistoryPoint,
+} from "@stock-tracker/shared";
 import { prisma } from "./db";
 import { pctChange } from "./calc";
 
@@ -36,12 +41,19 @@ export async function addWatch(
   return { watch, savedPricePoints: count };
 }
 
-// Lee de la DB el historial guardado de un símbolo, ordenado viejo → nuevo.
-export async function getStoredHistory(symbol: string) {
-  return prisma.pricePoint.findMany({
+// Lee de la DB el historial guardado de un símbolo (solo lo que el gráfico
+// necesita: fecha + cierre), ordenado viejo → nuevo.
+export async function getStoredHistory(symbol: string): Promise<HistoryPoint[]> {
+  const points = await prisma.pricePoint.findMany({
     where: { symbol },
     orderBy: { date: "asc" },
+    select: { date: true, close: true },
   });
+  // date es un Date (medianoche UTC); lo pasamos a "YYYY-MM-DD" para el cable.
+  return points.map((p) => ({
+    date: p.date.toISOString().slice(0, 10),
+    close: p.close,
+  }));
 }
 
 // Lista lo que el usuario sigue.
@@ -52,7 +64,7 @@ export async function listWatches() {
 // Arma el resumen de la watchlist con el "% desde que empecé a trackear".
 // Se calcula 100% desde la DB (precios ya cacheados): el precio base es el primer
 // cierre desde startedAt, y el precio actual es el último cierre guardado.
-export async function getWatchlistSummary() {
+export async function getWatchlistSummary(): Promise<WatchSummary[]> {
   const watches = await listWatches();
 
   // Por cada símbolo, dos consultas chiquitas (primer y último cierre). Para
@@ -81,10 +93,11 @@ export async function getWatchlistSummary() {
       return {
         symbol: w.symbol,
         name: w.name,
-        startedAt: w.startedAt,
+        // Fechas como string ISO (el contrato HTTP; JSON no tiene Date).
+        startedAt: w.startedAt.toISOString(),
         startClose: first?.close ?? null,
         lastClose: last?.close ?? null,
-        lastDate: last?.date ?? null,
+        lastDate: last ? last.date.toISOString() : null,
         pctSinceStart,
       };
     }),
