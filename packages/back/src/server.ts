@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
@@ -32,6 +33,10 @@ export async function buildServer(options: {
 }) {
   const { source } = options;
   const app = Fastify({ logger: options.logger ?? true });
+
+  // Helmet: agrega headers de seguridad HTTP por defecto (X-Content-Type-Options,
+  // X-Frame-Options, etc.) que endurecen el navegador contra ataques comunes.
+  await app.register(helmet);
 
   // Rate limiting: máximo N pedidos por IP por minuto. Frena el spam que podría
   // agotar la cuota de la API externa o llenar la DB. Al superarlo → 429.

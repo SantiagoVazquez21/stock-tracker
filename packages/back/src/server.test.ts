@@ -113,3 +113,17 @@ describe("Rate limiting", () => {
     await app.close();
   });
 });
+
+describe("Headers de seguridad (Helmet)", () => {
+  it("incluye headers de endurecimiento HTTP", async () => {
+    const app = await buildServer({ source: fakeSource, logger: false });
+
+    const res = await app.inject({ method: "GET", url: "/health" });
+
+    // nosniff impide que el navegador "adivine" el tipo de contenido (un vector
+    // clásico de ataques). Es uno de los headers que agrega Helmet.
+    expect(res.headers["x-content-type-options"]).toBe("nosniff");
+
+    await app.close();
+  });
+});
