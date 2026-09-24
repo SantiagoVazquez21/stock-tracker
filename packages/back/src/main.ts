@@ -1,5 +1,7 @@
+import cron from "node-cron";
 import { buildServer } from "./server";
 import { createTwelveDataSource } from "./providers/twelvedata";
+import { runDailyUpdate } from "./worker";
 
 // Carga el .env (API key, DATABASE_URL, etc.) antes de arrancar.
 process.loadEnvFile();
@@ -14,6 +16,16 @@ if (!apiKey) {
 // y se las inyecta al server.
 const source = createTwelveDataSource(apiKey);
 const app = buildServer({ source });
+
+// Worker diario: a las 22:00 (tras el cierre del mercado US) actualiza los
+// cierres de todos los símbolos de la watchlist. Corre mientras el proceso del
+// back esté vivo. En deploy el back está siempre on; en local corre si está
+// prendido a esa hora.
+cron.schedule("0 22 * * *", async () => {
+  app.log.info("Worker diario: actualizando cierres…");
+  const results = await runDailyUpdate(source);
+  app.log.info({ results }, "Worker diario: listo");
+});
 
 // 3001 por default en local (el 3000 lo usa otro proyecto). En deploy, la
 // plataforma inyecta PORT y ese manda.
