@@ -28,6 +28,7 @@ export async function buildServer(options: {
   source: MarketDataSource;
   logger?: boolean;
   rateLimitMax?: number;
+  allowedOrigins?: string[];
 }) {
   const { source } = options;
   const app = Fastify({ logger: options.logger ?? true });
@@ -39,11 +40,13 @@ export async function buildServer(options: {
     timeWindow: "1 minute",
   });
 
-  // CORS: el front corre en otro origen (puerto distinto) y el navegador, por
-  // seguridad, bloquea esos pedidos salvo que el server los autorice. origin:true
-  // refleja el origen que pide (cómodo en dev). En producción: restringir al
-  // dominio real del front.
-  await app.register(cors, { origin: true });
+  // CORS con LISTA BLANCA: solo estos orígenes reciben la autorización. Antes
+  // estaba en `origin: true` (cualquiera), lo que —combinado con la falta de
+  // auth— dejaba que cualquier web operara la API desde el navegador de una
+  // víctima. Ahora solo el front autorizado. Configurable por entorno.
+  await app.register(cors, {
+    origin: options.allowedOrigins ?? ["http://localhost:5174"],
+  });
 
   // Healthcheck: confirma que el server está vivo.
   app.get("/health", async () => {

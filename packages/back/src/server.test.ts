@@ -44,6 +44,21 @@ describe("GET /health", () => {
 
     await app.close();
   });
+
+  it("NO autoriza a un origen desconocido", async () => {
+    const app = await buildServer({ source: fakeSource, logger: false });
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/health",
+      headers: { origin: "https://sitio-malicioso.com" },
+    });
+
+    // Sin el header de autorización, el navegador de la víctima bloquea la respuesta.
+    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+
+    await app.close();
+  });
 });
 
 describe("POST /watches — validación de seguridad", () => {

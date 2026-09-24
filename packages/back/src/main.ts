@@ -15,7 +15,14 @@ if (!apiKey) {
 // main es el "composition root": crea las dependencias concretas (el proveedor)
 // y se las inyecta al server.
 const source = createTwelveDataSource(apiKey);
-const app = await buildServer({ source });
+
+// Orígenes permitidos por CORS. En prod se setea ALLOWED_ORIGINS (coma-separada)
+// con el dominio real del front; en local, el Vite del front.
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") ?? [
+  "http://localhost:5174",
+];
+
+const app = await buildServer({ source, allowedOrigins });
 
 // Worker diario: a las 22:00 (tras el cierre del mercado US) actualiza los
 // cierres de todos los símbolos de la watchlist. Corre mientras el proceso del
