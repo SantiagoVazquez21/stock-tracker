@@ -87,7 +87,9 @@ export function createTwelveDataSource(apiKey: string): MarketDataSource {
     },
 
     async getQuote(symbol) {
-      const url = `${BASE_URL}/quote?symbol=${symbol}&apikey=${apiKey}`;
+      // encodeURIComponent: aunque el símbolo ya viene validado, codificarlo es
+      // defensa en profundidad contra inyección de parámetros en la URL.
+      const url = `${BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`;
       const res = await fetch(url);
 
       // Error de transporte (4xx/5xx). Los errores que Twelve Data manda con
@@ -102,7 +104,7 @@ export function createTwelveDataSource(apiKey: string): MarketDataSource {
 
     async getHistory(symbol, range) {
       const outputsize = RANGE_TO_SIZE[range];
-      const url = `${BASE_URL}/time_series?symbol=${symbol}&interval=1day&outputsize=${outputsize}&apikey=${apiKey}`;
+      const url = `${BASE_URL}/time_series?symbol=${encodeURIComponent(symbol)}&interval=1day&outputsize=${outputsize}&apikey=${apiKey}`;
       const res = await fetch(url);
 
       if (!res.ok) {

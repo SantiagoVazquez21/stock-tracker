@@ -45,3 +45,34 @@ describe("GET /health", () => {
     await app.close();
   });
 });
+
+describe("POST /watches — validación de seguridad", () => {
+  it("rechaza un símbolo con inyección de parámetros", async () => {
+    const app = buildServer({ source: fakeSource, logger: false });
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/watches",
+      payload: { symbol: "AAPL&apikey=robada" },
+    });
+
+    // 400 = frenado en la validación, ANTES de tocar la DB o la API externa.
+    expect(res.statusCode).toBe(400);
+
+    await app.close();
+  });
+
+  it("rechaza un símbolo demasiado largo", async () => {
+    const app = buildServer({ source: fakeSource, logger: false });
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/watches",
+      payload: { symbol: "A".repeat(5000) },
+    });
+
+    expect(res.statusCode).toBe(400);
+
+    await app.close();
+  });
+});

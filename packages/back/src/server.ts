@@ -4,11 +4,20 @@ import { z } from "zod";
 import type { MarketDataSource } from "@stock-tracker/shared";
 import { addWatch, getStoredHistory, getWatchlistSummary } from "./watchlist";
 
-// Valida el body del POST /watches. .trim() saca espacios, .min(1) exige que no
-// esté vacío, .toUpperCase() normaliza el ticker ("aapl" -> "AAPL").
-const AddWatchBody = z.object({
-  symbol: z.string().trim().min(1).toUpperCase(),
-});
+// Un símbolo válido: SOLO letras, números y puntos (para tickers como "AAPL" o
+// "GGAL.BA"), máximo 12 caracteres. El regex es la defensa clave: un string
+// libre permitía inyectar parámetros en la URL de la API externa
+// (ej. "AAPL&apikey=..."). El .toUpperCase() normaliza al final.
+const symbolSchema = z
+  .string()
+  .trim()
+  .regex(
+    /^[a-zA-Z0-9.]{1,12}$/,
+    "Símbolo inválido: solo letras, números y puntos (máx. 12).",
+  )
+  .toUpperCase();
+
+const AddWatchBody = z.object({ symbol: symbolSchema });
 
 // Arma el servidor y devuelve la app SIN levantarla (sin .listen()). Recibe el
 // `source` inyectado: la API no sabe qué proveedor es, solo lo usa.
@@ -50,10 +59,14 @@ export function buildServer(options: { source: MarketDataSource; logger?: boolea
     }
   });
 
-  // Historial guardado de un símbolo (para el gráfico).
-  app.get<{ Params: { symbol: string } }>("/watches/:symbol/history", async (request) => {
-    const symbol = request.params.symbol.toUpperCase();
-    return getStoredHistory(symbol);
+  // Historial guardado de un símbolo (para el gráfico). Validamos el símbolo del
+  // path con el MISMO schema: nada entra sin pasar el filtro.
+  app.get<{ Params: { symbol: string } }>("/watches/:symbol/history", async (request, reply) => {
+    const parsed = symbolSchema.safeParse(request.params.symbol);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "Símbolo inválido" });
+    }
+    return getStoredHistory(parsed.data);
   });
 
   return app;
