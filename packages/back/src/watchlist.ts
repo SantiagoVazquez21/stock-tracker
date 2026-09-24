@@ -7,6 +7,27 @@ import type {
 import { prisma } from "./db";
 import { pctChange } from "./calc";
 
+// Trae el historial de un símbolo desde el proveedor y lo guarda en la DB.
+// Devuelve cuántos PricePoints NUEVOS se guardaron. Es idempotente: gracias al
+// @@unique(symbol, date) + skipDuplicates, correrla de nuevo solo agrega los
+// días que faltan. La usan tanto addWatch (con "1Y") como el worker (con "1W").
+export async function syncHistory(
+  source: MarketDataSource,
+  symbol: string,
+  range: Range,
+): Promise<number> {
+  const candles = await source.getHistory(symbol, range);
+  const { count } = await prisma.pricePoint.createMany({
+    data: candles.map((c) => ({
+      symbol,
+      date: new Date(c.date),
+      close: c.close,
+    })),
+    skipDuplicates: true,
+  });
+  return count;
+}
+
 // Agrega un símbolo a la watchlist y trae su historial (backfill) a la DB.
 // Recibe el `source` por parámetro (inyección): así esta lógica no depende de
 // QUÉ proveedor es, ni de cómo se creó. Testeable y desacoplada.
@@ -15,30 +36,20 @@ export async function addWatch(
   symbol: string,
   range: Range = "1Y",
 ) {
-  // 1. Registrar en la watchlist. upsert = idempotente: si ya lo seguís, no
-  //    revienta por el @unique; simplemente lo deja como está.
-  //    name = symbol por ahora. CARTEL: traer el nombre lindo ("Apple Inc.")
-  //    del proveedor más adelante.
+  // Registrar en la watchlist. upsert = idempotente: si ya lo seguís, no
+  // revienta por el @unique; simplemente lo deja como está.
+  // name = symbol por ahora. CARTEL: traer el nombre lindo ("Apple Inc.")
+  // del proveedor más adelante.
   const watch = await prisma.watch.upsert({
     where: { symbol },
     update: {},
     create: { symbol, name: symbol },
   });
 
-  // 2. Backfill: pedirle el historial al proveedor y guardarlo.
-  const candles = await source.getHistory(symbol, range);
-  const { count } = await prisma.pricePoint.createMany({
-    data: candles.map((c) => ({
-      symbol,
-      date: new Date(c.date),
-      close: c.close,
-    })),
-    // No re-guarda cierres que ya tenemos (gracias al @@unique symbol+date).
-    // Volver a correrlo mañana solo agrega los días nuevos.
-    skipDuplicates: true,
-  });
+  // Backfill del historial reusando syncHistory.
+  const savedPricePoints = await syncHistory(source, symbol, range);
 
-  return { watch, savedPricePoints: count };
+  return { watch, savedPricePoints };
 }
 
 // Lee de la DB el historial guardado de un símbolo (solo lo que el gráfico
