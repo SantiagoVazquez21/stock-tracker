@@ -33,17 +33,16 @@ export async function syncHistory(
 // QUÉ proveedor es, ni de cómo se creó. Testeable y desacoplada.
 export async function addWatch(
   source: MarketDataSource,
+  userId: number,
   symbol: string,
   range: Range = "1Y",
 ) {
-  // Registrar en la watchlist. upsert = idempotente: si ya lo seguís, no
-  // revienta por el @unique; simplemente lo deja como está.
-  // name = symbol por ahora. CARTEL: traer el nombre lindo ("Apple Inc.")
-  // del proveedor más adelante.
+  // Registrar en la watchlist DEL USUARIO. upsert idempotente por (userId, symbol):
+  // si este usuario ya lo sigue, no revienta. name = symbol por ahora.
   const watch = await prisma.watch.upsert({
-    where: { symbol },
+    where: { userId_symbol: { userId, symbol } },
     update: {},
-    create: { symbol, name: symbol },
+    create: { userId, symbol, name: symbol },
   });
 
   // Backfill del historial reusando syncHistory.
@@ -67,16 +66,26 @@ export async function getStoredHistory(symbol: string): Promise<HistoryPoint[]> 
   }));
 }
 
-// Lista lo que el usuario sigue.
-export async function listWatches() {
-  return prisma.watch.findMany({ orderBy: { symbol: "asc" } });
+// Lista lo que sigue UN usuario.
+export async function listWatches(userId: number) {
+  return prisma.watch.findMany({ where: { userId }, orderBy: { symbol: "asc" } });
+}
+
+// Todos los símbolos únicos que sigue CUALQUIER usuario. Lo usa el worker, que
+// actualiza los cierres de todo lo que alguien está trackeando (no por usuario).
+export async function getAllTrackedSymbols(): Promise<string[]> {
+  const rows = await prisma.watch.findMany({
+    distinct: ["symbol"],
+    select: { symbol: true },
+  });
+  return rows.map((r) => r.symbol);
 }
 
 // Arma el resumen de la watchlist con el "% desde que empecé a trackear".
 // Se calcula 100% desde la DB (precios ya cacheados): el precio base es el primer
 // cierre desde startedAt, y el precio actual es el último cierre guardado.
-export async function getWatchlistSummary(): Promise<WatchSummary[]> {
-  const watches = await listWatches();
+export async function getWatchlistSummary(userId: number): Promise<WatchSummary[]> {
+  const watches = await listWatches(userId);
 
   // Por cada símbolo, dos consultas chiquitas (primer y último cierre). Para
   // pocos símbolos alcanza; si la lista creciera mucho, se optimiza con una

@@ -1,15 +1,32 @@
 import Fastify from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import helmet from "@fastify/helmet";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import cookie from "@fastify/cookie";
+import jwt from "@fastify/jwt";
 import { z } from "zod";
 import type { MarketDataSource } from "@stock-tracker/shared";
 import { addWatch, getStoredHistory, getWatchlistSummary } from "./watchlist";
+import { createUser, findUserByEmail, verifyPassword } from "./auth";
 
-// Un símbolo válido: SOLO letras, números y puntos (para tickers como "AAPL" o
-// "GGAL.BA"), máximo 12 caracteres. El regex es la defensa clave: un string
-// libre permitía inyectar parámetros en la URL de la API externa
-// (ej. "AAPL&apikey=..."). El .toUpperCase() normaliza al final.
+// Tipos del JWT: qué guardamos en el token (payload) y qué queda en request.user.
+declare module "@fastify/jwt" {
+  interface FastifyJWT {
+    payload: { id: number };
+    user: { id: number };
+  }
+}
+
+// El decorator que protege rutas (verifica que haya un token válido).
+declare module "fastify" {
+  interface FastifyInstance {
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
+}
+
+// Un símbolo válido: solo letras, números y puntos (tickers "AAPL"/"GGAL.BA"),
+// máx 12. Bloquea inyección de parámetros en la URL de la API externa.
 const symbolSchema = z
   .string()
   .trim()
@@ -21,12 +38,15 @@ const symbolSchema = z
 
 const AddWatchBody = z.object({ symbol: symbolSchema });
 
-// Arma el servidor y devuelve la app SIN levantarla (sin .listen()). Recibe el
-// `source` inyectado: la API no sabe qué proveedor es, solo lo usa.
-// async porque los plugins (rate-limit, cors) se registran con await ANTES de
-// las rutas: así su hook global alcanza a todos los endpoints.
+// Credenciales de registro/login. Password mínimo 8.
+const CredentialsBody = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+});
+
 export async function buildServer(options: {
   source: MarketDataSource;
+  jwtSecret: string;
   logger?: boolean;
   rateLimitMax?: number;
   allowedOrigins?: string[];
@@ -34,62 +54,131 @@ export async function buildServer(options: {
   const { source } = options;
   const app = Fastify({ logger: options.logger ?? true });
 
-  // Helmet: agrega headers de seguridad HTTP por defecto (X-Content-Type-Options,
-  // X-Frame-Options, etc.) que endurecen el navegador contra ataques comunes.
+  // Headers de seguridad HTTP.
   await app.register(helmet);
-
-  // Rate limiting: máximo N pedidos por IP por minuto. Frena el spam que podría
-  // agotar la cuota de la API externa o llenar la DB. Al superarlo → 429.
+  // Rate limit global (por IP).
   await app.register(rateLimit, {
     max: options.rateLimitMax ?? 60,
     timeWindow: "1 minute",
   });
-
-  // CORS con LISTA BLANCA: solo estos orígenes reciben la autorización. Antes
-  // estaba en `origin: true` (cualquiera), lo que —combinado con la falta de
-  // auth— dejaba que cualquier web operara la API desde el navegador de una
-  // víctima. Ahora solo el front autorizado. Configurable por entorno.
+  // CORS: solo el front autorizado. credentials:true para que viaje la cookie.
   await app.register(cors, {
     origin: options.allowedOrigins ?? ["http://localhost:5174"],
+    credentials: true,
+  });
+  // Cookies + JWT: el token de sesión viaja en una cookie httpOnly.
+  await app.register(cookie);
+  await app.register(jwt, {
+    secret: options.jwtSecret,
+    cookie: { cookieName: "token", signed: false },
   });
 
-  // Healthcheck: confirma que el server está vivo.
-  app.get("/health", async () => {
-    return { status: "ok" };
+  // Decorator para proteger rutas: verifica el JWT de la cookie. Si falla → 401.
+  app.decorate(
+    "authenticate",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        await request.jwtVerify();
+      } catch {
+        return reply.code(401).send({ error: "No autenticado" });
+      }
+    },
+  );
+
+  function setAuthCookie(reply: FastifyReply, token: string) {
+    reply.setCookie("token", token, {
+      httpOnly: true, // no accesible desde JS → protege contra robo por XSS
+      sameSite: "lax", // mitiga CSRF
+      secure: process.env.NODE_ENV === "production", // solo HTTPS en prod
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 días
+    });
+  }
+
+  app.get("/health", async () => ({ status: "ok" }));
+
+  // ── Auth ────────────────────────────────────────────────────────────────
+  // Rate limit MÁS estricto acá (5/min) contra fuerza bruta.
+  app.post(
+    "/auth/register",
+    { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const parsed = CredentialsBody.safeParse(request.body);
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: "Datos inválidos", details: parsed.error.issues });
+      }
+      const { email, password } = parsed.data;
+      if (await findUserByEmail(email)) {
+        return reply.code(409).send({ error: "Ese email ya está registrado" });
+      }
+      const user = await createUser(email, password);
+      setAuthCookie(reply, app.jwt.sign({ id: user.id }));
+      return reply.code(201).send({ id: user.id, email: user.email });
+    },
+  );
+
+  app.post(
+    "/auth/login",
+    { config: { rateLimit: { max: 5, timeWindow: "1 minute" } } },
+    async (request, reply) => {
+      const parsed = CredentialsBody.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "Datos inválidos" });
+      }
+      const { email, password } = parsed.data;
+      const user = await findUserByEmail(email);
+      // Mensaje genérico: no revelamos si el email existe (anti enumeración).
+      if (!user || !(await verifyPassword(password, user.passwordHash))) {
+        return reply.code(401).send({ error: "Email o contraseña incorrectos" });
+      }
+      setAuthCookie(reply, app.jwt.sign({ id: user.id }));
+      return { id: user.id, email: user.email };
+    },
+  );
+
+  app.post("/auth/logout", async (_request, reply) => {
+    reply.clearCookie("token", { path: "/" });
+    return { ok: true };
   });
 
-  // Lista la watchlist con el "% desde que empecé" (todo desde la DB).
-  app.get("/watches", async () => {
-    return getWatchlistSummary();
+  // ── Watchlist (protegida: cada usuario ve solo la suya) ───────────────────
+  app.get("/watches", { preHandler: [app.authenticate] }, async (request) => {
+    return getWatchlistSummary(request.user.id);
   });
 
-  // Agrega un símbolo a la watchlist + backfill de su historial.
-  app.post("/watches", async (request, reply) => {
-    const parsed = AddWatchBody.safeParse(request.body);
-    if (!parsed.success) {
-      // Input inválido: 400 y le decimos al cliente qué estuvo mal.
-      return reply.code(400).send({ error: "Body inválido", details: parsed.error.issues });
-    }
+  app.post(
+    "/watches",
+    { preHandler: [app.authenticate] },
+    async (request, reply) => {
+      const parsed = AddWatchBody.safeParse(request.body);
+      if (!parsed.success) {
+        return reply
+          .code(400)
+          .send({ error: "Body inválido", details: parsed.error.issues });
+      }
+      try {
+        const result = await addWatch(source, request.user.id, parsed.data.symbol);
+        return reply.code(201).send(result);
+      } catch (err) {
+        request.log.error(err);
+        return reply.code(502).send({ error: `No se pudo agregar ${parsed.data.symbol}` });
+      }
+    },
+  );
 
-    try {
-      const result = await addWatch(source, parsed.data.symbol);
-      return reply.code(201).send(result); // 201 = creado
-    } catch (err) {
-      // Falló el proveedor externo (símbolo inexistente, rate limit, etc.).
-      request.log.error(err);
-      return reply.code(502).send({ error: `No se pudo agregar ${parsed.data.symbol}` });
-    }
-  });
-
-  // Historial guardado de un símbolo (para el gráfico). Validamos el símbolo del
-  // path con el MISMO schema: nada entra sin pasar el filtro.
-  app.get<{ Params: { symbol: string } }>("/watches/:symbol/history", async (request, reply) => {
-    const parsed = symbolSchema.safeParse(request.params.symbol);
-    if (!parsed.success) {
-      return reply.code(400).send({ error: "Símbolo inválido" });
-    }
-    return getStoredHistory(parsed.data);
-  });
+  app.get<{ Params: { symbol: string } }>(
+    "/watches/:symbol/history",
+    { preHandler: [app.authenticate] },
+    async (request, reply) => {
+      const parsed = symbolSchema.safeParse(request.params.symbol);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "Símbolo inválido" });
+      }
+      return getStoredHistory(parsed.data);
+    },
+  );
 
   return app;
 }

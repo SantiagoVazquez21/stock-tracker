@@ -15,13 +15,28 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Lo que el usuario elige seguir. En modo single-user, cada símbolo se sigue
-// una sola vez (@unique). Cuando haya login, esto pasará a @@unique([userId, symbol]).
+// Cada persona registrada. La contraseña se guarda SIEMPRE como hash (nunca en
+// texto plano). email único para que no haya cuentas duplicadas.
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  watches      Watch[]
+}
+
+// Lo que un usuario elige seguir. Ahora pertenece a un User (userId). Un mismo
+// símbolo puede seguirlo cada usuario por su cuenta → @@unique([userId, symbol]).
+// onDelete: Cascade = si se borra el usuario, se borran sus watches.
 model Watch {
   id        Int      @id @default(autoincrement())
-  symbol    String   @unique
+  symbol    String
   name      String
   startedAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol])
 }
 
 // El cierre diario de cada símbolo: la serie temporal que alimenta el gráfico

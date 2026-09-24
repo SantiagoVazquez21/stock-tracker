@@ -1,5 +1,5 @@
 import type { MarketDataSource } from "@stock-tracker/shared";
-import { listWatches, syncHistory } from "./watchlist";
+import { getAllTrackedSymbols, syncHistory } from "./watchlist";
 
 export interface UpdateResult {
   symbol: string;
@@ -33,9 +33,6 @@ export async function updateSymbols(
 export async function runDailyUpdate(
   source: MarketDataSource,
 ): Promise<UpdateResult[]> {
-  const watches = await listWatches();
-  return updateSymbols(
-    watches.map((w) => w.symbol),
-    (symbol) => syncHistory(source, symbol, "1W"),
-  );
+  const symbols = await getAllTrackedSymbols();
+  return updateSymbols(symbols, (symbol) => syncHistory(source, symbol, "1W"));
 }
