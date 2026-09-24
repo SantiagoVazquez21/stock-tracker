@@ -1,6 +1,8 @@
 import cron from "node-cron";
 import { buildServer } from "./server";
 import { createTwelveDataSource } from "./providers/twelvedata";
+import { createYahooSource } from "./providers/yahoo";
+import { createRegistry } from "./providers/registry";
 import { runDailyUpdate } from "./worker";
 
 // Carga el .env (API key, DATABASE_URL, etc.) antes de arrancar.
@@ -14,7 +16,12 @@ if (!apiKey) {
 
 // main es el "composition root": crea las dependencias concretas (el proveedor)
 // y se las inyecta al server.
-const source = createTwelveDataSource(apiKey);
+// Registro con los dos proveedores: Twelve Data (US) + Yahoo (Merval, ".BA").
+// El resto de la app usa `source` sin saber que por debajo hay varios.
+const source = createRegistry([
+  createTwelveDataSource(apiKey),
+  createYahooSource(),
+]);
 
 // Orígenes permitidos por CORS. En prod se setea ALLOWED_ORIGINS (coma-separada)
 // con el dominio real del front; en local, el Vite del front.

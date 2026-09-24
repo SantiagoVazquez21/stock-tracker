@@ -80,10 +80,10 @@ export function createTwelveDataSource(apiKey: string): MarketDataSource {
     name: "TwelveData",
 
     supports(symbol) {
-      // Con un solo proveedor aceptamos cualquier símbolo no vacío y dejamos que
-      // la API resuelva si existe. CARTEL: cuando sumemos el 2º proveedor
-      // (Merval), acá va el routing real (qué símbolos cubre cada uno).
-      return symbol.trim().length > 0;
+      // Cubre símbolos US (sin sufijo). Los ".BA" (Merval) los cede al proveedor
+      // Yahoo. La API externa resuelve si el símbolo US existe de verdad.
+      const s = symbol.trim();
+      return s.length > 0 && !s.toUpperCase().endsWith(".BA");
     },
 
     async getQuote(symbol) {
