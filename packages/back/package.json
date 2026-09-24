@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
+    "@fastify/rate-limit": "^11.2.0",
     "@prisma/client": "^6.19.3",
     "@stock-tracker/shared": "*",
     "fastify": "^5.12.5",

@@ -15,7 +15,7 @@ if (!apiKey) {
 // main es el "composition root": crea las dependencias concretas (el proveedor)
 // y se las inyecta al server.
 const source = createTwelveDataSource(apiKey);
-const app = buildServer({ source });
+const app = await buildServer({ source });
 
 // Worker diario: a las 22:00 (tras el cierre del mercado US) actualiza los
 // cierres de todos los símbolos de la watchlist. Corre mientras el proceso del

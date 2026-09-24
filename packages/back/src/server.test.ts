@@ -16,7 +16,7 @@ const fakeSource: MarketDataSource = {
 
 describe("GET /health", () => {
   it("responde 200 con status ok", async () => {
-    const app = buildServer({ source: fakeSource, logger: false });
+    const app = await buildServer({ source: fakeSource, logger: false });
 
     // inject simula un pedido HTTP en memoria: no abre puerto, no hace red.
     const res = await app.inject({ method: "GET", url: "/health" });
@@ -28,7 +28,7 @@ describe("GET /health", () => {
   });
 
   it("devuelve el header CORS que autoriza al front", async () => {
-    const app = buildServer({ source: fakeSource, logger: false });
+    const app = await buildServer({ source: fakeSource, logger: false });
 
     // Simulamos un pedido desde el origen del front. Con CORS bien configurado,
     // el back responde autorizando ese origen.
@@ -48,7 +48,7 @@ describe("GET /health", () => {
 
 describe("POST /watches — validación de seguridad", () => {
   it("rechaza un símbolo con inyección de parámetros", async () => {
-    const app = buildServer({ source: fakeSource, logger: false });
+    const app = await buildServer({ source: fakeSource, logger: false });
 
     const res = await app.inject({
       method: "POST",
@@ -63,7 +63,7 @@ describe("POST /watches — validación de seguridad", () => {
   });
 
   it("rechaza un símbolo demasiado largo", async () => {
-    const app = buildServer({ source: fakeSource, logger: false });
+    const app = await buildServer({ source: fakeSource, logger: false });
 
     const res = await app.inject({
       method: "POST",
@@ -72,6 +72,28 @@ describe("POST /watches — validación de seguridad", () => {
     });
 
     expect(res.statusCode).toBe(400);
+
+    await app.close();
+  });
+});
+
+describe("Rate limiting", () => {
+  it("corta con 429 al superar el límite de pedidos", async () => {
+    // Límite bajo (3) para probar rápido.
+    const app = await buildServer({ source: fakeSource, logger: false, rateLimitMax: 3 });
+
+    // Misma IP en todos para que el limiter los cuente juntos (inject no tiene
+    // una IP de red real).
+    const ip = "9.9.9.9";
+
+    // Los primeros 3 pasan…
+    for (let i = 0; i < 3; i++) {
+      const ok = await app.inject({ method: "GET", url: "/health", remoteAddress: ip });
+      expect(ok.statusCode).toBe(200);
+    }
+    // …el 4º queda bloqueado con 429 (Too Many Requests).
+    const blocked = await app.inject({ method: "GET", url: "/health", remoteAddress: ip });
+    expect(blocked.statusCode).toBe(429);
 
     await app.close();
   });

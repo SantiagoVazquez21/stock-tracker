@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import type { MarketDataSource } from "@stock-tracker/shared";
 import { addWatch, getStoredHistory, getWatchlistSummary } from "./watchlist";
@@ -21,15 +22,28 @@ const AddWatchBody = z.object({ symbol: symbolSchema });
 
 // Arma el servidor y devuelve la app SIN levantarla (sin .listen()). Recibe el
 // `source` inyectado: la API no sabe qué proveedor es, solo lo usa.
-export function buildServer(options: { source: MarketDataSource; logger?: boolean }) {
+// async porque los plugins (rate-limit, cors) se registran con await ANTES de
+// las rutas: así su hook global alcanza a todos los endpoints.
+export async function buildServer(options: {
+  source: MarketDataSource;
+  logger?: boolean;
+  rateLimitMax?: number;
+}) {
   const { source } = options;
   const app = Fastify({ logger: options.logger ?? true });
+
+  // Rate limiting: máximo N pedidos por IP por minuto. Frena el spam que podría
+  // agotar la cuota de la API externa o llenar la DB. Al superarlo → 429.
+  await app.register(rateLimit, {
+    max: options.rateLimitMax ?? 60,
+    timeWindow: "1 minute",
+  });
 
   // CORS: el front corre en otro origen (puerto distinto) y el navegador, por
   // seguridad, bloquea esos pedidos salvo que el server los autorice. origin:true
   // refleja el origen que pide (cómodo en dev). En producción: restringir al
   // dominio real del front.
-  app.register(cors, { origin: true });
+  await app.register(cors, { origin: true });
 
   // Healthcheck: confirma que el server está vivo.
   app.get("/health", async () => {
