@@ -16,7 +16,9 @@ export function App() {
         <AuthGate>
           <header className="mb-8 flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Ticker</h1>
+              <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+                <span aria-hidden>📈</span> Ticker
+              </h1>
               <p className="mt-1 text-sm text-muted">
                 Seguí el mercado desde el día que lo empezás a trackear.
               </p>

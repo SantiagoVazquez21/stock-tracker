@@ -13,9 +13,21 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
     queryFn: getWatches,
   });
 
+  // Skeleton: unas tarjetas "fantasma" que pulsan mientras carga. Se siente más
+  // pulido que un texto "Cargando…" y evita el salto de layout.
   if (isLoading) {
-    return <p className="text-sm text-muted">Cargando watchlist…</p>;
+    return (
+      <ul className="flex flex-col gap-2">
+        {[0, 1, 2].map((i) => (
+          <li
+            key={i}
+            className="h-[70px] animate-pulse rounded-xl border border-line bg-surface"
+          />
+        ))}
+      </ul>
+    );
   }
+
   if (isError) {
     return (
       <p className="text-sm text-down">
@@ -23,11 +35,18 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
       </p>
     );
   }
+
   if (!data || data.length === 0) {
     return (
-      <p className="text-sm text-muted">
-        Todavía no seguís nada. Agregá un símbolo arriba. 📈
-      </p>
+      <div className="rounded-xl border border-dashed border-line px-4 py-12 text-center">
+        <p className="text-3xl">📈</p>
+        <p className="mt-3 font-medium">Tu watchlist está vacía</p>
+        <p className="mt-1 text-sm text-muted">
+          Buscá una acción arriba (ej.{" "}
+          <span className="text-content">AAPL</span> o{" "}
+          <span className="text-content">Apple</span>) para empezar a seguirla.
+        </p>
+      </div>
     );
   }
 
@@ -61,8 +80,8 @@ function WatchCard({ watch, isSelected, onSelect }: WatchCardProps) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["watches"] }),
   });
 
-  // El borde va en el <li> para poder tener DOS botones adentro (seleccionar y
-  // eliminar) sin anidarlos — anidar <button> dentro de <button> es HTML inválido.
+  // El borde va en el <li> para tener DOS botones adentro (seleccionar y
+  // eliminar) sin anidarlos — anidar <button> dentro de <button> es inválido.
   return (
     <li
       className={`flex items-center gap-1 rounded-xl border bg-surface pr-2 transition hover:bg-surface-2 ${
@@ -71,20 +90,22 @@ function WatchCard({ watch, isSelected, onSelect }: WatchCardProps) {
     >
       <button
         onClick={onSelect}
-        className="flex flex-1 items-center justify-between px-4 py-3 text-left"
+        className="flex flex-1 items-center justify-between gap-3 px-4 py-3 text-left"
       >
-        <div>
+        <div className="min-w-0">
           <p className="font-semibold">{watch.symbol}</p>
-          <p className="text-xs text-muted">{watch.name}</p>
+          <p className="truncate text-xs text-muted">{watch.name}</p>
         </div>
-        <div className="text-right tabular-nums">
-          <p className="font-medium">
+        <div className="shrink-0 text-right tabular-nums">
+          <p className="text-base font-semibold">
             {watch.lastClose != null ? `$${watch.lastClose.toFixed(2)}` : "—"}
           </p>
           <p
-            className={`text-xs font-medium ${isUp ? "text-up" : "text-down"}`}
+            className={`text-xs font-semibold ${isUp ? "text-up" : "text-down"}`}
           >
-            {pct != null ? `${isUp ? "+" : ""}${pct.toFixed(2)}%` : "—"}
+            {pct != null
+              ? `${isUp ? "▲" : "▼"} ${Math.abs(pct).toFixed(2)}%`
+              : "—"}
           </p>
         </div>
       </button>
