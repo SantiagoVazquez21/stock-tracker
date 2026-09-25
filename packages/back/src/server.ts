@@ -85,11 +85,15 @@ export async function buildServer(options: {
     },
   );
 
+  const isProd = process.env.NODE_ENV === "production";
+
   function setAuthCookie(reply: FastifyReply, token: string) {
     reply.setCookie("token", token, {
       httpOnly: true, // no accesible desde JS → protege contra robo por XSS
-      sameSite: "lax", // mitiga CSRF
-      secure: process.env.NODE_ENV === "production", // solo HTTPS en prod
+      // Front y back en dominios distintos (Vercel↔Render) = cross-site: exige
+      // "none" + secure. En local (mismo localhost) "lax" alcanza y no pide HTTPS.
+      sameSite: isProd ? "none" : "lax",
+      secure: isProd, // "none" solo es válido con secure (HTTPS)
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 días
     });
@@ -139,7 +143,12 @@ export async function buildServer(options: {
   );
 
   app.post("/auth/logout", async (_request, reply) => {
-    reply.clearCookie("token", { path: "/" });
+    // Mismos atributos que al setearla, para que el navegador la borre bien.
+    reply.clearCookie("token", {
+      path: "/",
+      sameSite: isProd ? "none" : "lax",
+      secure: isProd,
+    });
     return { ok: true };
   });
 
