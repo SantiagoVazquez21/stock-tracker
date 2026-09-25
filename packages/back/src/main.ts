@@ -53,7 +53,9 @@ cron.schedule("0 22 * * *", async () => {
 const port = Number(process.env.PORT ?? 3001);
 
 try {
-  await app.listen({ port });
+  // host 0.0.0.0 = escucha en todas las interfaces. En un contenedor de deploy
+  // (Railway/Render) es obligatorio; en local funciona igual.
+  await app.listen({ port, host: "0.0.0.0" });
   // Fastify ya loguea "Server listening at http://..." por su cuenta.
 } catch (err) {
   app.log.error(err);

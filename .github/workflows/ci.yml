@@ -1,0 +1,32 @@
+name: CI
+
+# Corre en cada push y en cada Pull Request.
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # Instala EXACTAMENTE lo del package-lock (reproducible).
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Genera el cliente de Prisma (lo necesita el typecheck del back).
+      # No se conecta a la DB, solo lee el schema.
+      - name: Generar cliente Prisma
+        run: npx prisma generate --schema=packages/back/prisma/schema.prisma
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
