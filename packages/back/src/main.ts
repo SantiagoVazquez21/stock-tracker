@@ -6,7 +6,13 @@ import { createRegistry } from "./providers/registry";
 import { runDailyUpdate } from "./worker";
 
 // Carga el .env (API key, DATABASE_URL, etc.) antes de arrancar.
-process.loadEnvFile();
+// En local carga el .env; en prod (Render) no hay archivo y las variables vienen
+// inyectadas por la plataforma, así que la ausencia del .env no debe romper nada.
+try {
+  process.loadEnvFile();
+} catch {
+  // Sin .env: seguimos con lo que haya en process.env.
+}
 
 const apiKey = process.env.TWELVE_DATA_API_KEY;
 if (!apiKey) {
