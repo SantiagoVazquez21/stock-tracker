@@ -3,6 +3,7 @@ import type {
   HistoryPoint,
   AuthUser,
   Quote,
+  SymbolSearchResult,
 } from "@stock-tracker/shared";
 
 // La URL del back. Configurable por entorno (Vite expone las vars VITE_*),
@@ -56,6 +57,11 @@ export function removeWatch(symbol: string) {
 type LiveQuote = Pick<Quote, "symbol" | "name" | "price" | "changePct">;
 export function getQuote(symbol: string) {
   return request<LiveQuote>(`/watches/${encodeURIComponent(symbol)}/quote`);
+}
+
+// GET /search?q= → autocomplete de símbolos (por ticker o nombre de empresa).
+export function searchSymbols(q: string) {
+  return request<SymbolSearchResult[]>(`/search?q=${encodeURIComponent(q)}`);
 }
 
 // GET /watches/:symbol/history → puntos para el gráfico.

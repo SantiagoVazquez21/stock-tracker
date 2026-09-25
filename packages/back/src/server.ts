@@ -19,6 +19,7 @@ import {
   findUserById,
   verifyPassword,
 } from "./auth";
+import { searchSymbols } from "./search";
 
 // Tipos del JWT: qué guardamos en el token (payload) y qué queda en request.user.
 declare module "@fastify/jwt" {
@@ -180,6 +181,24 @@ export async function buildServer(options: {
         return reply.code(401).send({ error: "No autenticado" });
       }
       return user;
+    },
+  );
+
+  // Buscador de símbolos (autocomplete): por ticker o nombre de empresa.
+  app.get<{ Querystring: { q?: string } }>(
+    "/search",
+    { preHandler: [app.authenticate] },
+    async (request, reply) => {
+      const q = (request.query.q ?? "").trim();
+      if (q.length < 1 || q.length > 40) {
+        return reply.code(400).send({ error: "Búsqueda inválida" });
+      }
+      try {
+        return await searchSymbols(q);
+      } catch (err) {
+        request.log.error(err);
+        return reply.code(502).send({ error: "No se pudo buscar" });
+      }
     },
   );
 

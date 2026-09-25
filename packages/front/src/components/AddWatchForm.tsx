@@ -1,50 +1,78 @@
-import { useState, type FormEvent } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addWatch } from "../api";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { addWatch, searchSymbols } from "../api";
 
 export function AddWatchForm() {
-  const [symbol, setSymbol] = useState("");
+  const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
   const queryClient = useQueryClient();
 
-  // useMutation maneja una escritura (POST). Nos da isPending/isError sin que
-  // tengamos que manejar estados a mano.
-  const mutation = useMutation({
-    mutationFn: (s: string) => addWatch(s),
+  // Debounce: espera 300 ms sin tipear antes de buscar, para no pegarle a la API
+  // en cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query.trim()), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const search = useQuery({
+    queryKey: ["search", debounced],
+    queryFn: () => searchSymbols(debounced),
+    enabled: debounced.length >= 1,
+    staleTime: 60_000,
+  });
+
+  const add = useMutation({
+    mutationFn: (symbol: string) => addWatch(symbol),
     onSuccess: () => {
-      // Al agregar, invalidamos la watchlist para que se vuelva a pedir sola.
       queryClient.invalidateQueries({ queryKey: ["watches"] });
-      setSymbol("");
+      setQuery("");
+      setDebounced("");
     },
   });
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    const s = symbol.trim();
-    if (s) mutation.mutate(s);
-  }
+  const results = search.data ?? [];
+  const showDropdown =
+    debounced.length >= 1 && results.length > 0 && !add.isPending;
 
   return (
-    <form onSubmit={onSubmit} className="mb-6">
-      <div className="flex gap-2">
-        <input
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          placeholder="Buscar símbolo (ej. AAPL)"
-          className="flex-1 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-accent"
-        />
-        <button
-          type="submit"
-          disabled={mutation.isPending}
-          className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-        >
-          {mutation.isPending ? "Agregando…" : "Agregar"}
-        </button>
-      </div>
-      {mutation.isError && (
+    <div className="relative mb-6">
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Buscar por símbolo o empresa (ej. YPF, Apple)…"
+        autoComplete="off"
+        className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-accent"
+      />
+
+      {add.isPending && (
+        <p className="mt-2 text-xs text-muted">Agregando {add.variables}…</p>
+      )}
+      {add.isError && (
         <p className="mt-2 text-xs text-down">
-          No se pudo agregar. Revisá el símbolo o que el back esté corriendo.
+          No se pudo agregar. Probá con otro símbolo.
         </p>
       )}
-    </form>
+
+      {showDropdown && (
+        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-line bg-surface shadow-lg">
+          {results.map((r) => (
+            <li key={`${r.symbol}-${r.exchange}`}>
+              <button
+                onClick={() => add.mutate(r.symbol)}
+                className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition hover:bg-surface-2"
+              >
+                <span className="min-w-0">
+                  <span className="font-semibold">{r.symbol}</span>{" "}
+                  <span className="text-muted">{r.name}</span>
+                </span>
+                <span className="shrink-0 text-xs text-muted">
+                  {r.exchange}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

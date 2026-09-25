@@ -54,3 +54,10 @@ export interface AuthUser {
   id: number;
   email: string;
 }
+
+// Un resultado del buscador de símbolos. Lo devuelve GET /search?q=...
+export interface SymbolSearchResult {
+  symbol: string;
+  name: string;
+  exchange: string;
+}
