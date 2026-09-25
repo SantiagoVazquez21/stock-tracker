@@ -7,7 +7,12 @@ import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
 import { z } from "zod";
 import type { MarketDataSource } from "@stock-tracker/shared";
-import { addWatch, getStoredHistory, getWatchlistSummary } from "./watchlist";
+import {
+  addWatch,
+  getStoredHistory,
+  getWatchlistSummary,
+  removeWatch,
+} from "./watchlist";
 import {
   createUser,
   findUserByEmail,
@@ -218,6 +223,20 @@ export async function buildServer(options: {
         return reply.code(400).send({ error: "Símbolo inválido" });
       }
       return getStoredHistory(parsed.data);
+    },
+  );
+
+  // Dejar de seguir un símbolo.
+  app.delete<{ Params: { symbol: string } }>(
+    "/watches/:symbol",
+    { preHandler: [app.authenticate] },
+    async (request, reply) => {
+      const parsed = symbolSchema.safeParse(request.params.symbol);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "Símbolo inválido" });
+      }
+      await removeWatch(request.user.id, parsed.data);
+      return reply.code(204).send(); // 204 = hecho, sin contenido
     },
   );
 

@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { WatchSummary } from "@stock-tracker/shared";
-import { getWatches } from "../api";
+import { getWatches, removeWatch } from "../api";
 
 interface WatchListProps {
   selected: string | null;
@@ -8,7 +8,6 @@ interface WatchListProps {
 }
 
 export function WatchList({ selected, onSelect }: WatchListProps) {
-  // useQuery maneja el fetch de lectura: cachea, y expone loading/error.
   const { data, isLoading, isError } = useQuery({
     queryKey: ["watches"],
     queryFn: getWatches,
@@ -39,7 +38,7 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
           key={w.symbol}
           watch={w}
           isSelected={w.symbol === selected}
-          onClick={() => onSelect(w.symbol)}
+          onSelect={() => onSelect(w.symbol)}
         />
       ))}
     </ul>
@@ -49,20 +48,30 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
 interface WatchCardProps {
   watch: WatchSummary;
   isSelected: boolean;
-  onClick: () => void;
+  onSelect: () => void;
 }
 
-function WatchCard({ watch, isSelected, onClick }: WatchCardProps) {
+function WatchCard({ watch, isSelected, onSelect }: WatchCardProps) {
   const pct = watch.pctSinceStart;
   const isUp = (pct ?? 0) >= 0;
 
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: () => removeWatch(watch.symbol),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["watches"] }),
+  });
+
+  // El borde va en el <li> para poder tener DOS botones adentro (seleccionar y
+  // eliminar) sin anidarlos — anidar <button> dentro de <button> es HTML inválido.
   return (
-    <li>
+    <li
+      className={`flex items-center gap-1 rounded-xl border bg-surface pr-2 transition hover:bg-surface-2 ${
+        isSelected ? "border-accent" : "border-line"
+      }`}
+    >
       <button
-        onClick={onClick}
-        className={`flex w-full items-center justify-between rounded-xl border bg-surface px-4 py-3 text-left transition hover:bg-surface-2 ${
-          isSelected ? "border-accent" : "border-line"
-        }`}
+        onClick={onSelect}
+        className="flex flex-1 items-center justify-between px-4 py-3 text-left"
       >
         <div>
           <p className="font-semibold">{watch.symbol}</p>
@@ -78,6 +87,16 @@ function WatchCard({ watch, isSelected, onClick }: WatchCardProps) {
             {pct != null ? `${isUp ? "+" : ""}${pct.toFixed(2)}%` : "—"}
           </p>
         </div>
+      </button>
+
+      <button
+        onClick={() => remove.mutate()}
+        disabled={remove.isPending}
+        aria-label={`Dejar de seguir ${watch.symbol}`}
+        title="Dejar de seguir"
+        className="shrink-0 rounded-lg px-2 py-1 text-muted transition hover:text-down disabled:opacity-50"
+      >
+        ✕
       </button>
     </li>
   );

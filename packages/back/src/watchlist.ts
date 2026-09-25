@@ -76,6 +76,13 @@ export async function listWatches(userId: number) {
   });
 }
 
+// Deja de seguir un símbolo (de la watchlist del usuario). deleteMany en vez de
+// delete: si no lo seguía, no revienta (idempotente). No borra los PricePoint,
+// que son globales y le sirven a otros usuarios / de caché.
+export async function removeWatch(userId: number, symbol: string) {
+  await prisma.watch.deleteMany({ where: { userId, symbol } });
+}
+
 // Todos los símbolos únicos que sigue CUALQUIER usuario. Lo usa el worker, que
 // actualiza los cierres de todo lo que alguien está trackeando (no por usuario).
 export async function getAllTrackedSymbols(): Promise<string[]> {

@@ -23,6 +23,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     throw new Error(`API ${res.status}: ${await res.text()}`);
   }
+  // 204 = sin contenido (ej. un DELETE): no hay JSON para parsear.
+  if (res.status === 204) {
+    return undefined as T;
+  }
   return res.json() as Promise<T>;
 }
 
@@ -36,6 +40,13 @@ export function addWatch(symbol: string) {
   return request<{ savedPricePoints: number }>("/watches", {
     method: "POST",
     body: JSON.stringify({ symbol }),
+  });
+}
+
+// DELETE /watches/:symbol → deja de seguir un símbolo.
+export function removeWatch(symbol: string) {
+  return request<void>(`/watches/${encodeURIComponent(symbol)}`, {
+    method: "DELETE",
   });
 }
 
