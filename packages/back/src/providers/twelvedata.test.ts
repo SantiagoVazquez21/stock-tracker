@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { parseQuote, parseHistory, createTwelveDataSource } from "./twelvedata";
 
 describe("parseQuote (Twelve Data → Quote)", () => {
@@ -98,5 +98,47 @@ describe("createTwelveDataSource / supports", () => {
 
     expect(source.supports("AAPL")).toBe(true);
     expect(source.supports("   ")).toBe(false);
+  });
+});
+
+describe("createTwelveDataSource getQuote (con fetch mockeado)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("llama a la API y devuelve el Quote parseado", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        close: "100.5",
+        percent_change: "2",
+        timestamp: 1000,
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const source = createTwelveDataSource("SECRET");
+    const quote = await source.getQuote("AAPL");
+
+    expect(quote).toEqual({
+      symbol: "AAPL",
+      name: "Apple Inc.",
+      price: 100.5,
+      changePct: 2,
+      asOf: new Date(1000 * 1000),
+    });
+    // Pega con el símbolo en la URL, sin tocar internet de verdad.
+    expect(String(mockFetch.mock.calls[0][0])).toContain("symbol=AAPL");
+  });
+
+  it("tira error si la API responde con status HTTP de error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+    );
+
+    const source = createTwelveDataSource("SECRET");
+
+    await expect(source.getQuote("AAPL")).rejects.toThrow();
   });
 });

@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { parseQuote, parseHistory } from "./yahoo";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { parseQuote, parseHistory, createYahooSource } from "./yahoo";
 
 describe("parseQuote (Yahoo → Quote)", () => {
   it("extrae precio, % del día y fecha desde meta", () => {
@@ -98,5 +98,42 @@ describe("parseHistory (Yahoo → Candle[])", () => {
     };
 
     expect(parseHistory(raw)).toHaveLength(1);
+  });
+});
+
+describe("createYahooSource getQuote (con fetch mockeado)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("manda User-Agent y devuelve el Quote parseado", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        chart: {
+          result: [
+            {
+              meta: {
+                symbol: "GGAL.BA",
+                longName: "Grupo Galicia",
+                regularMarketPrice: 6415,
+                regularMarketChangePercent: -0.5,
+                regularMarketTime: 1000,
+              },
+            },
+          ],
+        },
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const source = createYahooSource();
+    const quote = await source.getQuote("GGAL.BA");
+
+    expect(quote.name).toBe("Grupo Galicia");
+    expect(quote.price).toBe(6415);
+    // Yahoo bloquea pedidos sin User-Agent: verificamos que lo mandamos.
+    const opts = mockFetch.mock.calls[0][1] as {
+      headers: Record<string, string>;
+    };
+    expect(opts.headers["User-Agent"]).toBeTruthy();
   });
 });
