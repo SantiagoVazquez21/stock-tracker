@@ -14,6 +14,7 @@ function fakeSource(
     supports: supportsFn,
     getQuote: async (symbol) => ({
       symbol,
+      name: symbol,
       price,
       changePct: 0,
       asOf: new Date(0),

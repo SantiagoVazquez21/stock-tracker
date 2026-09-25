@@ -26,6 +26,7 @@ const RANGE_TO_SIZE: Record<Range, number> = {
 // a number (338.89), y de paso valida que sean convertibles.
 const QuoteSchema = z.object({
   symbol: z.string(),
+  name: z.string(),
   close: z.coerce.number(),
   percent_change: z.coerce.number(),
   timestamp: z.number(),
@@ -38,6 +39,7 @@ export function parseQuote(raw: unknown): Quote {
   const q = QuoteSchema.parse(raw);
   return {
     symbol: q.symbol,
+    name: q.name,
     price: q.close,
     changePct: q.percent_change,
     asOf: new Date(q.timestamp * 1000),

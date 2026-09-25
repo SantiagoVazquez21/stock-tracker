@@ -7,6 +7,7 @@ describe("parseQuote (Twelve Data → Quote)", () => {
     // Ojo: los precios vienen como STRING, y esperamos que salgan como NUMBER.
     const raw = {
       symbol: "AAPL",
+      name: "Apple Inc.",
       close: "338.89001",
       percent_change: "0.82111377",
       timestamp: 1789997400,
@@ -14,6 +15,7 @@ describe("parseQuote (Twelve Data → Quote)", () => {
 
     expect(parseQuote(raw)).toEqual({
       symbol: "AAPL",
+      name: "Apple Inc.",
       price: 338.89001,
       changePct: 0.82111377,
       asOf: new Date(1789997400 * 1000),

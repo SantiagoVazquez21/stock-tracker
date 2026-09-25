@@ -37,12 +37,16 @@ export async function addWatch(
   symbol: string,
   range: Range = "1Y",
 ) {
+  // Traemos el quote para el nombre lindo ("Apple Inc." en vez de "AAPL") y, de
+  // paso, esto valida que el símbolo exista antes de guardarlo.
+  const quote = await source.getQuote(symbol);
+
   // Registrar en la watchlist DEL USUARIO. upsert idempotente por (userId, symbol):
-  // si este usuario ya lo sigue, no revienta. name = symbol por ahora.
+  // si ya lo sigue, no revienta y de paso refresca el nombre.
   const watch = await prisma.watch.upsert({
     where: { userId_symbol: { userId, symbol } },
-    update: {},
-    create: { userId, symbol, name: symbol },
+    update: { name: quote.name },
+    create: { userId, symbol, name: quote.name },
   });
 
   // Backfill del historial reusando syncHistory.

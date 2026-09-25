@@ -26,6 +26,8 @@ const QuoteResponseSchema = z.object({
         z.object({
           meta: z.object({
             symbol: z.string(),
+            longName: z.string().optional(),
+            shortName: z.string().optional(),
             regularMarketPrice: z.number(),
             regularMarketChangePercent: z.number(),
             regularMarketTime: z.number(),
@@ -41,6 +43,8 @@ export function parseQuote(raw: unknown): Quote {
   const meta = chart.result[0].meta;
   return {
     symbol: meta.symbol,
+    // Yahoo trae el nombre en longName o shortName; si no, usamos el símbolo.
+    name: meta.longName ?? meta.shortName ?? meta.symbol,
     price: meta.regularMarketPrice,
     changePct: meta.regularMarketChangePercent,
     asOf: new Date(meta.regularMarketTime * 1000),

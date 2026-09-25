@@ -9,6 +9,7 @@ describe("parseQuote (Yahoo → Quote)", () => {
           {
             meta: {
               symbol: "GGAL.BA",
+              longName: "Grupo Financiero Galicia S.A.",
               regularMarketPrice: 6415,
               regularMarketChangePercent: -0.465,
               regularMarketTime: 1790268755,
@@ -20,6 +21,7 @@ describe("parseQuote (Yahoo → Quote)", () => {
 
     expect(parseQuote(raw)).toEqual({
       symbol: "GGAL.BA",
+      name: "Grupo Financiero Galicia S.A.",
       price: 6415,
       changePct: -0.465,
       asOf: new Date(1790268755 * 1000),
