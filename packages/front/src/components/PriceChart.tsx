@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CartesianGrid,
@@ -10,14 +11,19 @@ import {
 } from "recharts";
 import { getHistory, getQuote } from "../api";
 
+// Cada rango = cuántos días (de trading) del final mostramos.
+const RANGES = { "1S": 5, "1M": 22, "3M": 66, "6M": 132, "1A": 252 } as const;
+type RangeKey = keyof typeof RANGES;
+
 export function PriceChart({ symbol }: { symbol: string }) {
+  const [range, setRange] = useState<RangeKey>("3M");
+
   const history = useQuery({
     queryKey: ["history", symbol],
     queryFn: () => getHistory(symbol),
   });
 
-  // Precio EN VIVO. staleTime 60s: no vuelve a pedirlo en cada render, solo si
-  // pasó más de un minuto (evita spamear la API externa).
+  // Precio EN VIVO. staleTime 60s: no vuelve a pedirlo en cada render.
   const quote = useQuery({
     queryKey: ["quote", symbol],
     queryFn: () => getQuote(symbol),
@@ -27,9 +33,12 @@ export function PriceChart({ symbol }: { symbol: string }) {
   const box = "mt-6 rounded-xl border border-line bg-surface p-4";
   const up = (quote.data?.changePct ?? 0) >= 0;
 
+  // Recortamos el historial ya cargado a los últimos N puntos del rango elegido.
+  const points = history.data?.slice(-RANGES[range]) ?? [];
+
   return (
     <div className={box}>
-      <div className="mb-4 flex items-baseline justify-between gap-2">
+      <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold">
           {symbol} <span className="font-normal text-muted">· evolución</span>
         </h2>
@@ -48,16 +57,32 @@ export function PriceChart({ symbol }: { symbol: string }) {
         )}
       </div>
 
+      <div className="mb-3 flex gap-1">
+        {(Object.keys(RANGES) as RangeKey[]).map((r) => (
+          <button
+            key={r}
+            onClick={() => setRange(r)}
+            className={`rounded px-2.5 py-1 text-xs font-medium transition ${
+              r === range
+                ? "bg-accent text-white"
+                : "text-muted hover:text-content"
+            }`}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+
       {history.isLoading ? (
         <p className="text-sm text-muted">Cargando gráfico…</p>
       ) : history.isError ? (
         <p className="text-sm text-down">No se pudo cargar el historial.</p>
-      ) : !history.data || history.data.length === 0 ? (
+      ) : points.length === 0 ? (
         <p className="text-sm text-muted">Sin datos de historial todavía.</p>
       ) : (
         <ResponsiveContainer width="100%" height={280}>
           <LineChart
-            data={history.data}
+            data={points}
             margin={{ top: 5, right: 12, left: 0, bottom: 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-line)" />
