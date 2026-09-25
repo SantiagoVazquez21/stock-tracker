@@ -30,7 +30,10 @@ export function PriceChart({ symbol }: { symbol: string }) {
     staleTime: 60_000,
   });
 
-  const box = "mt-6 rounded-xl border border-line bg-surface p-4";
+  // overflow-hidden + min-w-0: evita que el ResponsiveContainer de Recharts
+  // "estire" la página en pantallas angostas (mide contra una caja acotada).
+  const box =
+    "mt-6 min-w-0 overflow-hidden rounded-xl border border-line bg-surface p-4";
   const up = (quote.data?.changePct ?? 0) >= 0;
 
   // Recortamos el historial ya cargado a los últimos N puntos del rango elegido.

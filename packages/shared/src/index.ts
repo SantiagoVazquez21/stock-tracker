@@ -41,6 +41,9 @@ export interface WatchSummary {
   lastClose: number | null;
   lastDate: string | null;
   pctSinceStart: number | null;
+  // Últimos ~30 cierres (viejo → nuevo) para dibujar el sparkline de la fila.
+  // Va en el mismo resumen para evitar un pedido por símbolo (N+1) desde el front.
+  spark: number[];
 }
 
 // Un punto del historial para el gráfico. Lo devuelve GET /watches/:symbol/history.

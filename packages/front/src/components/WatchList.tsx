@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { WatchSummary } from "@stock-tracker/shared";
 import { getWatches, removeWatch } from "../api";
+import { Monogram, Sparkline } from "./Sparkline";
 
 interface WatchListProps {
   selected: string | null;
@@ -13,19 +14,17 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
     queryFn: getWatches,
   });
 
-  // Skeleton: tarjetas "fantasma" con shimmer (un brillo que barre) mientras
-  // carga. Se lee como "cargando datos" y evita el salto de layout. La clase
-  // .skeleton está en index.css y respeta prefers-reduced-motion.
   if (isLoading) {
+    // Skeleton con shimmer, ya con forma de tabla (evita el salto de layout).
     return (
-      <ul className="flex flex-col gap-2">
-        {[0, 1, 2].map((i) => (
-          <li
+      <div className="overflow-hidden rounded-xl border border-line">
+        {[0, 1, 2, 3].map((i) => (
+          <div
             key={i}
-            className="skeleton h-[70px] rounded-xl border border-line"
+            className="skeleton h-14 border-b border-line last:border-b-0"
           />
         ))}
-      </ul>
+      </div>
     );
   }
 
@@ -77,26 +76,41 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
   }
 
   return (
-    <ul className="flex flex-col gap-2">
-      {data.map((w) => (
-        <WatchCard
-          key={w.symbol}
-          watch={w}
-          isSelected={w.symbol === selected}
-          onSelect={() => onSelect(w.symbol)}
-        />
-      ))}
-    </ul>
+    <div className="overflow-x-auto rounded-xl border border-line">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
+            <th className="px-4 py-2.5 text-left font-medium">Símbolo</th>
+            <th className="px-4 py-2.5 text-right font-medium">Último</th>
+            <th className="px-4 py-2.5 text-right font-medium">Desde inicio</th>
+            <th className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">
+              Tendencia
+            </th>
+            <th className="w-10 px-2 py-2.5" aria-label="Acciones" />
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((w) => (
+            <WatchRow
+              key={w.symbol}
+              watch={w}
+              isSelected={w.symbol === selected}
+              onSelect={() => onSelect(w.symbol)}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-interface WatchCardProps {
+interface WatchRowProps {
   watch: WatchSummary;
   isSelected: boolean;
   onSelect: () => void;
 }
 
-function WatchCard({ watch, isSelected, onSelect }: WatchCardProps) {
+function WatchRow({ watch, isSelected, onSelect }: WatchRowProps) {
   const pct = watch.pctSinceStart;
   const isUp = (pct ?? 0) >= 0;
 
@@ -106,45 +120,61 @@ function WatchCard({ watch, isSelected, onSelect }: WatchCardProps) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["watches"] }),
   });
 
-  // El borde va en el <li> para tener DOS botones adentro (seleccionar y
-  // eliminar) sin anidarlos — anidar <button> dentro de <button> es inválido.
   return (
-    <li
-      className={`flex items-center gap-1 rounded-xl border bg-surface pr-2 transition hover:bg-surface-2 ${
-        isSelected ? "border-accent" : "border-line"
+    <tr
+      onClick={onSelect}
+      className={`cursor-pointer border-b border-line transition last:border-b-0 hover:bg-surface-2 ${
+        isSelected ? "bg-surface-2" : ""
       }`}
     >
-      <button
-        onClick={onSelect}
-        className="flex flex-1 items-center justify-between gap-3 px-4 py-3 text-left"
-      >
-        <div className="min-w-0">
-          <p className="font-semibold">{watch.symbol}</p>
-          <p className="truncate text-xs text-muted">{watch.name}</p>
+      {/* Celda del símbolo: un borde de color a la izquierda marca la fila activa. */}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <span
+            className={`-ml-4 mr-1 h-8 w-0.5 rounded-full ${
+              isSelected ? "bg-accent" : "bg-transparent"
+            }`}
+          />
+          <Monogram symbol={watch.symbol} />
+          <div className="min-w-0">
+            <p className="font-semibold">{watch.symbol}</p>
+            <p className="truncate text-xs text-muted">{watch.name}</p>
+          </div>
         </div>
-        <div className="shrink-0 text-right tabular-nums">
-          <p className="text-base font-semibold">
-            {watch.lastClose != null ? `$${watch.lastClose.toFixed(2)}` : "—"}
-          </p>
-          <p
-            className={`text-xs font-semibold ${isUp ? "text-up" : "text-down"}`}
-          >
-            {pct != null
-              ? `${isUp ? "▲" : "▼"} ${Math.abs(pct).toFixed(2)}%`
-              : "—"}
-          </p>
-        </div>
-      </button>
+      </td>
 
-      <button
-        onClick={() => remove.mutate()}
-        disabled={remove.isPending}
-        aria-label={`Dejar de seguir ${watch.symbol}`}
-        title="Dejar de seguir"
-        className="shrink-0 rounded-lg px-2 py-1 text-muted transition hover:text-down disabled:opacity-50"
+      <td className="px-4 py-3 text-right font-medium tabular-nums">
+        {watch.lastClose != null ? `$${watch.lastClose.toFixed(2)}` : "—"}
+      </td>
+
+      <td
+        className={`px-4 py-3 text-right font-semibold tabular-nums ${
+          isUp ? "text-up" : "text-down"
+        }`}
       >
-        ✕
-      </button>
-    </li>
+        {pct != null ? `${isUp ? "▲" : "▼"} ${Math.abs(pct).toFixed(2)}%` : "—"}
+      </td>
+
+      <td className="hidden px-4 py-3 sm:table-cell">
+        <div className="flex justify-end">
+          <Sparkline data={watch.spark} up={isUp} />
+        </div>
+      </td>
+
+      <td className="px-2 py-3 text-right">
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // no seleccionar la fila al borrar
+            remove.mutate();
+          }}
+          disabled={remove.isPending}
+          aria-label={`Dejar de seguir ${watch.symbol}`}
+          title="Dejar de seguir"
+          className="rounded-lg px-2 py-1 text-muted transition hover:text-down disabled:opacity-50"
+        >
+          ✕
+        </button>
+      </td>
+    </tr>
   );
 }

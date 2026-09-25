@@ -125,6 +125,16 @@ export async function getWatchlistSummary(
         orderBy: { date: "desc" },
       });
 
+      // Últimos 30 cierres para el sparkline. Los pido desc (los más nuevos) y
+      // los doy vuelta a viejo → nuevo, que es como se dibuja el gráfico.
+      const recent = await prisma.pricePoint.findMany({
+        where: { symbol: w.symbol },
+        orderBy: { date: "desc" },
+        take: 30,
+        select: { close: true },
+      });
+      const spark = recent.map((p) => p.close).reverse();
+
       const pctSinceStart =
         first && last ? pctChange(first.close, last.close) : null;
 
@@ -137,6 +147,7 @@ export async function getWatchlistSummary(
         lastClose: last?.close ?? null,
         lastDate: last ? last.date.toISOString() : null,
         pctSinceStart,
+        spark,
       };
     }),
   );

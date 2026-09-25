@@ -35,7 +35,7 @@ export function AddWatchForm() {
     debounced.length >= 1 && results.length > 0 && !add.isPending;
 
   return (
-    <div className="relative mb-6">
+    <div className="relative mb-6 max-w-md">
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
