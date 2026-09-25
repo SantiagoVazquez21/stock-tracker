@@ -1,12 +1,23 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { AuthGate } from "./components/AuthGate";
 import { Sidebar } from "./components/Sidebar";
 import { AddWatchForm } from "./components/AddWatchForm";
 import { SummaryStrip } from "./components/SummaryStrip";
 import { WatchList } from "./components/WatchList";
-import { TickerDetail } from "./components/TickerDetail";
 import { MarketStatus, UpdatedAgo } from "./components/MarketStatus";
-import { CommandPalette } from "./components/CommandPalette";
+
+// Lazy: el detalle (que arrastra Recharts) y la paleta (cmdk) se cargan recién
+// cuando se usan — no en la carga inicial. Bajan el peso del bundle de entrada.
+const TickerDetail = lazy(() =>
+  import("./components/TickerDetail").then((m) => ({
+    default: m.TickerDetail,
+  })),
+);
+const CommandPalette = lazy(() =>
+  import("./components/CommandPalette").then((m) => ({
+    default: m.CommandPalette,
+  })),
+);
 
 const isMac =
   typeof navigator !== "undefined" &&
@@ -65,16 +76,29 @@ export function App() {
             <AddWatchForm />
             <SummaryStrip />
             <WatchList selected={selected} onSelect={setSelected} />
-            {selected && <TickerDetail symbol={selected} />}
+            {selected && (
+              <Suspense
+                fallback={
+                  <div className="skeleton mt-6 h-72 rounded-xl border border-line" />
+                }
+              >
+                <TickerDetail symbol={selected} />
+              </Suspense>
+            )}
           </div>
         </main>
       </div>
 
-      <CommandPalette
-        open={cmdOpen}
-        onOpenChange={setCmdOpen}
-        onSelect={setSelected}
-      />
+      {/* Solo se monta (y baja su chunk) al abrir la paleta. */}
+      {cmdOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette
+            open
+            onOpenChange={setCmdOpen}
+            onSelect={setSelected}
+          />
+        </Suspense>
+      )}
     </AuthGate>
   );
 }
