@@ -11,7 +11,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     // include = manda y recibe la cookie de sesión (httpOnly) en cada pedido,
     // aunque el front y el back estén en orígenes distintos.
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    // Solo declaramos JSON cuando hay body: un POST sin body (ej. logout) con
+    // Content-Type json haría que el back intente parsear un cuerpo vacío → 400.
+    headers: options?.body ? { "Content-Type": "application/json" } : {},
     ...options,
   });
   if (!res.ok) {
