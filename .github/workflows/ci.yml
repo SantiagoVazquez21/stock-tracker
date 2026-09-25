@@ -20,10 +20,10 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      # Genera el cliente de Prisma (lo necesita el typecheck del back).
-      # No se conecta a la DB, solo lee el schema.
+      # Genera el cliente de Prisma (lo necesita el typecheck del back). Se corre
+      # dentro del workspace back (donde vive el binario prisma). No toca la DB.
       - name: Generar cliente Prisma
-        run: npx prisma generate --schema=packages/back/prisma/schema.prisma
+        run: npm run build -w @stock-tracker/back
 
       - name: Typecheck
         run: npm run typecheck
