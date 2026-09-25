@@ -53,7 +53,9 @@ export async function addWatch(
 
 // Lee de la DB el historial guardado de un símbolo (solo lo que el gráfico
 // necesita: fecha + cierre), ordenado viejo → nuevo.
-export async function getStoredHistory(symbol: string): Promise<HistoryPoint[]> {
+export async function getStoredHistory(
+  symbol: string,
+): Promise<HistoryPoint[]> {
   const points = await prisma.pricePoint.findMany({
     where: { symbol },
     orderBy: { date: "asc" },
@@ -68,7 +70,10 @@ export async function getStoredHistory(symbol: string): Promise<HistoryPoint[]> 
 
 // Lista lo que sigue UN usuario.
 export async function listWatches(userId: number) {
-  return prisma.watch.findMany({ where: { userId }, orderBy: { symbol: "asc" } });
+  return prisma.watch.findMany({
+    where: { userId },
+    orderBy: { symbol: "asc" },
+  });
 }
 
 // Todos los símbolos únicos que sigue CUALQUIER usuario. Lo usa el worker, que
@@ -84,7 +89,9 @@ export async function getAllTrackedSymbols(): Promise<string[]> {
 // Arma el resumen de la watchlist con el "% desde que empecé a trackear".
 // Se calcula 100% desde la DB (precios ya cacheados): el precio base es el primer
 // cierre desde startedAt, y el precio actual es el último cierre guardado.
-export async function getWatchlistSummary(userId: number): Promise<WatchSummary[]> {
+export async function getWatchlistSummary(
+  userId: number,
+): Promise<WatchSummary[]> {
   const watches = await listWatches(userId);
 
   // Por cada símbolo, dos consultas chiquitas (primer y último cierre). Para

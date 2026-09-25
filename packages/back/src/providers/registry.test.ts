@@ -12,7 +12,12 @@ function fakeSource(
   return {
     name,
     supports: supportsFn,
-    getQuote: async (symbol) => ({ symbol, price, changePct: 0, asOf: new Date(0) }),
+    getQuote: async (symbol) => ({
+      symbol,
+      price,
+      changePct: 0,
+      asOf: new Date(0),
+    }),
     getHistory: async () => [],
   };
 }

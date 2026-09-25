@@ -1,4 +1,8 @@
-import type { WatchSummary, HistoryPoint, AuthUser } from "@stock-tracker/shared";
+import type {
+  WatchSummary,
+  HistoryPoint,
+  AuthUser,
+} from "@stock-tracker/shared";
 
 // La URL del back. Configurable por entorno (Vite expone las vars VITE_*),
 // con localhost:3000 como default en desarrollo.

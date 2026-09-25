@@ -23,7 +23,11 @@ describe("parseQuote (Twelve Data → Quote)", () => {
   it("rechaza una respuesta que no tiene la forma esperada", () => {
     // Twelve Data devuelve errores como { code, message, status } — a veces con
     // HTTP 200. parseQuote NO debe tragarse eso: tiene que tirar error.
-    const errorResponse = { code: 404, message: "symbol not found", status: "error" };
+    const errorResponse = {
+      code: 404,
+      message: "symbol not found",
+      status: "error",
+    };
 
     expect(() => parseQuote(errorResponse)).toThrow();
   });
@@ -36,20 +40,50 @@ describe("parseHistory (Twelve Data → Candle[])", () => {
     const raw = {
       meta: { symbol: "AAPL" },
       values: [
-        { datetime: "2026-09-21", open: "335.20", high: "339.64", low: "333.04", close: "338.98", volume: "34913171" },
-        { datetime: "2026-09-18", open: "337.91", high: "338.48", low: "332.53", close: "336.13", volume: "86433100" },
+        {
+          datetime: "2026-09-21",
+          open: "335.20",
+          high: "339.64",
+          low: "333.04",
+          close: "338.98",
+          volume: "34913171",
+        },
+        {
+          datetime: "2026-09-18",
+          open: "337.91",
+          high: "338.48",
+          low: "332.53",
+          close: "336.13",
+          volume: "86433100",
+        },
       ],
       status: "ok",
     };
 
     expect(parseHistory(raw)).toEqual([
-      { date: "2026-09-18", open: 337.91, high: 338.48, low: 332.53, close: 336.13 },
-      { date: "2026-09-21", open: 335.2, high: 339.64, low: 333.04, close: 338.98 },
+      {
+        date: "2026-09-18",
+        open: 337.91,
+        high: 338.48,
+        low: 332.53,
+        close: 336.13,
+      },
+      {
+        date: "2026-09-21",
+        open: 335.2,
+        high: 339.64,
+        low: 333.04,
+        close: 338.98,
+      },
     ]);
   });
 
   it("rechaza una respuesta sin values (objeto de error)", () => {
-    const errorResponse = { code: 400, message: "bad request", status: "error" };
+    const errorResponse = {
+      code: 400,
+      message: "bad request",
+      status: "error",
+    };
 
     expect(() => parseHistory(errorResponse)).toThrow();
   });

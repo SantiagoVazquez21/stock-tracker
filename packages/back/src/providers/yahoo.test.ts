@@ -27,7 +27,9 @@ describe("parseQuote (Yahoo → Quote)", () => {
   });
 
   it("rechaza una respuesta de error (sin result)", () => {
-    const errorResponse = { chart: { result: null, error: { description: "Not Found" } } };
+    const errorResponse = {
+      chart: { result: null, error: { description: "Not Found" } },
+    };
     expect(() => parseQuote(errorResponse)).toThrow();
   });
 });

@@ -43,7 +43,9 @@ describe("GET /health", () => {
       url: "/health",
       headers: { origin: "http://localhost:5174" },
     });
-    expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:5174");
+    expect(res.headers["access-control-allow-origin"]).toBe(
+      "http://localhost:5174",
+    );
     await app.close();
   });
 
@@ -107,10 +109,18 @@ describe("Rate limiting", () => {
     const { app } = await makeApp(3);
     const ip = "9.9.9.9";
     for (let i = 0; i < 3; i++) {
-      const ok = await app.inject({ method: "GET", url: "/health", remoteAddress: ip });
+      const ok = await app.inject({
+        method: "GET",
+        url: "/health",
+        remoteAddress: ip,
+      });
       expect(ok.statusCode).toBe(200);
     }
-    const blocked = await app.inject({ method: "GET", url: "/health", remoteAddress: ip });
+    const blocked = await app.inject({
+      method: "GET",
+      url: "/health",
+      remoteAddress: ip,
+    });
     expect(blocked.statusCode).toBe(429);
     await app.close();
   });

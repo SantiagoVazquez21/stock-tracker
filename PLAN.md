@@ -15,6 +15,7 @@ Vercel, algo de Supabase. Sigue el mercado financiero por interés propio (Merva
 acciones).
 
 **Objetivo del proyecto:** un proyecto de aprendizaje full-stack **TypeScript** que:
+
 1. Tape sus baches de código reales (ver sección 2).
 2. Le enseñe **TypeScript** (nunca lo usó, quiere aprenderlo).
 3. Resuelva algo que le interesa de verdad (seguir el mercado) → motivación extra.
@@ -26,6 +27,7 @@ Dedicación: **~2 h/día** de base, algún día 3-4 h. Ritmo tranquilo, foco en 
 ## 2. Diagnóstico de nivel (de analizar sus 3 proyectos: portfolio React, Renti-bot Python, lab C#)
 
 **Fortalezas (arriba del promedio junior):**
+
 - Documentación y comunicación excelentes; comentarios que explican el **porqué**.
 - Buen instinto de arquitectura: separa en capas, centraliza (`Tema.cs`, `constants.js`).
 - Mentalidad de debugging de causa raíz y QA (encontró bugs reales integrando con otros).
@@ -33,6 +35,7 @@ Dedicación: **~2 h/día** de base, algún día 3-4 h. Ritmo tranquilo, foco en 
 - Patrones React que sorprenden (refs para closures, cleanup de listeners/RAF).
 
 **Baches a atacar A PROPÓSITO con este proyecto (el mismo defecto apareció en los 3 proyectos):**
+
 1. **No abstrae comportamiento** → 3 scrapers copy-paste (Renti-bot), sistema de balas duplicado
    Game↔SectionShooter (portfolio), 5 UserControls sin clase base (C#). ESTE es el bache #1.
 2. **Sin tipado** (sin type hints en Python, sin PropTypes/TS en React).
@@ -63,39 +66,40 @@ features de más al principio).
 
 ## 4. Stack completo y por qué
 
-| Capa | Herramienta | Por qué |
-|---|---|---|
-| Lenguaje | **TypeScript** | Bache de tipado; un solo lenguaje front+back |
-| Front | **React + Vite + Tailwind** | Ya los sabe; reaprovecha conocimiento + TS encima |
-| Front | **Recharts** | Gráfico de evolución del precio, declarativo |
-| Front | **TanStack Query** | Manejo de estado de servidor (fetch/caché/loading/error) — nunca lo hizo bien |
-| Back | **Node.js** | Runtime del servidor |
-| Back | **Fastify** | API REST liviana y tipada (mejor que Express para TS) |
-| Back | **Zod** | Validación en runtime + infiere tipos; valida inputs Y respuestas de la API externa |
-| Back | **node-cron** | Worker diario que baja precios (evolución del `schedule` frágil de Flask) |
-| DB | **PostgreSQL** | Relacional, la más pedida; relaciones + integridad |
-| DB | **Prisma** | ORM tipado; modelo en TS, consultas tipadas, migraciones (sin SQL a mano como en C#) |
-| DB | **Supabase** | Hosting Postgres free; ya lo tocó en el lab |
-| Test | **Vitest** | Bache de tests; test-primero (BDD-lite) |
-| Calidad | **ESLint + Prettier** | Consistencia y buenas prácticas |
-| Test (opcional, Sem 6) | **Cucumber/Gherkin** | Tests de aceptación de la API; skill para el CV |
-| Infra | **Git + GitHub** | Control de versiones (ya lo usa) |
-| Infra | **GitHub Actions** | CI: corre tests/lint en cada push (que no queden rotos como en Renti-bot) |
-| Deploy | **Vercel** (front) + **Railway/Render** (back) | Free tier; Vercel ya lo usó |
-| Repo | **npm workspaces (monorepo)** | Paquetes `front`/`back`/`shared`; compartir tipos desde una fuente única |
-| Datos | **API financiera (Finnhub / Twelve Data)** | Fuente de precios; su rate limit gratis OBLIGA a aprender caché en DB |
+| Capa                   | Herramienta                                    | Por qué                                                                              |
+| ---------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Lenguaje               | **TypeScript**                                 | Bache de tipado; un solo lenguaje front+back                                         |
+| Front                  | **React + Vite + Tailwind**                    | Ya los sabe; reaprovecha conocimiento + TS encima                                    |
+| Front                  | **Recharts**                                   | Gráfico de evolución del precio, declarativo                                         |
+| Front                  | **TanStack Query**                             | Manejo de estado de servidor (fetch/caché/loading/error) — nunca lo hizo bien        |
+| Back                   | **Node.js**                                    | Runtime del servidor                                                                 |
+| Back                   | **Fastify**                                    | API REST liviana y tipada (mejor que Express para TS)                                |
+| Back                   | **Zod**                                        | Validación en runtime + infiere tipos; valida inputs Y respuestas de la API externa  |
+| Back                   | **node-cron**                                  | Worker diario que baja precios (evolución del `schedule` frágil de Flask)            |
+| DB                     | **PostgreSQL**                                 | Relacional, la más pedida; relaciones + integridad                                   |
+| DB                     | **Prisma**                                     | ORM tipado; modelo en TS, consultas tipadas, migraciones (sin SQL a mano como en C#) |
+| DB                     | **Supabase**                                   | Hosting Postgres free; ya lo tocó en el lab                                          |
+| Test                   | **Vitest**                                     | Bache de tests; test-primero (BDD-lite)                                              |
+| Calidad                | **ESLint + Prettier**                          | Consistencia y buenas prácticas                                                      |
+| Test (opcional, Sem 6) | **Cucumber/Gherkin**                           | Tests de aceptación de la API; skill para el CV                                      |
+| Infra                  | **Git + GitHub**                               | Control de versiones (ya lo usa)                                                     |
+| Infra                  | **GitHub Actions**                             | CI: corre tests/lint en cada push (que no queden rotos como en Renti-bot)            |
+| Deploy                 | **Vercel** (front) + **Railway/Render** (back) | Free tier; Vercel ya lo usó                                                          |
+| Repo                   | **npm workspaces (monorepo)**                  | Paquetes `front`/`back`/`shared`; compartir tipos desde una fuente única             |
+| Datos                  | **API financiera (Finnhub / Twelve Data)**     | Fuente de precios; su rate limit gratis OBLIGA a aprender caché en DB                |
 
 ---
 
 ## 5. Arquitectura clave (el corazón pedagógico)
 
 ### 5.1 La interfaz `MarketDataSource` (ataca el bache #1: abstracción)
+
 En vez de un archivo por API copiado y pegado, UNA interfaz que cada proveedor implementa:
 
 ```ts
 interface MarketDataSource {
   name: string;
-  supports(symbol: string): boolean;                 // Finnhub no tiene Merval, Twelve Data sí
+  supports(symbol: string): boolean; // Finnhub no tiene Merval, Twelve Data sí
   getQuote(symbol: string): Promise<Quote>;
   getHistory(symbol: string, range: Range): Promise<Candle[]>;
 }
@@ -107,15 +111,18 @@ rate-limited (`Promise.allSettled` → fallos parciales, que Renti-bot ignoraba)
 tocados (Open/Closed). Si lo logra, aprendió a abstraer comportamiento.
 
 ### 5.2 Modelo de datos (Prisma)
+
 ```
 User        → id, email, passwordHash
 Watch       → id, userId, symbol, name, startedAt   (lo que el user elige seguir)
 PricePoint  → id, symbol, date, close   (serie temporal; ÚNICA por symbol+date)
 ```
+
 El "% desde que empecé" NO se guarda: se **deriva** del `PricePoint` en `startedAt` vs el último
 (derivar en vez de duplicar → misma lección de no desincronizar datos).
 
 ### 5.3 La lección "de producción"
+
 Las APIs financieras gratis tienen rate limits duros → un **worker** baja los precios 1 vez y los
 **cachea en la DB**; el front y el cálculo de % leen de la DB, no de la API. Es el patrón que
 Renti-bot no tenía (pegaba a la fuente en cada corrida).
@@ -125,15 +132,15 @@ Renti-bot no tenía (pegaba a la fuente en cada corrida).
 ## 6. Roadmap (2 h/día, ~6 semanas). MVP primero.
 
 1. **Sem 1** — Monorepo TS + interfaz `MarketDataSource` con UN proveedor (mercado US). Traer
-   quote + historial de un símbolo por consola. *Bache: TS + async + la interfaz desde el día 1.*
+   quote + historial de un símbolo por consola. _Bache: TS + async + la interfaz desde el día 1._
 2. **Sem 2** — Postgres + Prisma: `Watch` + `PricePoint`, backfill de historial al agregar. API
-   Fastify con Zod. *Full-stack + validación.*
+   Fastify con Zod. _Full-stack + validación._
 3. **Sem 3** — Front React+TS: buscar, agregar, listar con % desde `startedAt` + gráfico (Recharts).
-   *Front tipado + TanStack Query.*
+   _Front tipado + TanStack Query._
 4. **Sem 4** — Worker diario (`allSettled`) + **segundo proveedor** para Merval/acciones argentinas.
-   *Async serio + el pago de la abstracción.*
-5. **Sem 5** — Auth con hash (redención del texto plano de C#) + multi-usuario. *Auth real.*
-6. **Sem 6** — Tests con fixtures (respuestas de API guardadas) + CI + deploy. *Tests + robustez.*
+   _Async serio + el pago de la abstracción._
+5. **Sem 5** — Auth con hash (redención del texto plano de C#) + multi-usuario. _Auth real._
+6. **Sem 6** — Tests con fixtures (respuestas de API guardadas) + CI + deploy. _Tests + robustez._
 
 ---
 
@@ -181,6 +188,7 @@ Renti-bot no tenía (pegaba a la fuente en cada corrida).
 ## 10. Cómo retomar en una sesión nueva
 
 En la sesión nueva, Santi puede decir algo como:
+
 > "Retomemos el proyecto stock-tracker. Leé `C:\Users\Monti\Claudia\stock-tracker\PLAN.md` y
 > arranquemos la Semana 1."
 

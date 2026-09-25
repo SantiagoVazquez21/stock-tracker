@@ -25,6 +25,12 @@ jobs:
       - name: Generar cliente Prisma
         run: npm run build -w @stock-tracker/back
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Formato (Prettier)
+        run: npm run format:check
+
       - name: Typecheck
         run: npm run typecheck
 

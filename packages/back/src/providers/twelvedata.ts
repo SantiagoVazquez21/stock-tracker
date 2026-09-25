@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { Quote, Candle, Range, MarketDataSource } from "@stock-tracker/shared";
+import type {
+  Quote,
+  Candle,
+  Range,
+  MarketDataSource,
+} from "@stock-tracker/shared";
 
 const BASE_URL = "https://api.twelvedata.com";
 
@@ -95,7 +100,9 @@ export function createTwelveDataSource(apiKey: string): MarketDataSource {
       // Error de transporte (4xx/5xx). Los errores que Twelve Data manda con
       // HTTP 200 los caza parseQuote vía Zod, así cubrimos las dos vías.
       if (!res.ok) {
-        throw new Error(`Twelve Data respondió ${res.status} al pedir ${symbol}`);
+        throw new Error(
+          `Twelve Data respondió ${res.status} al pedir ${symbol}`,
+        );
       }
 
       const raw = await res.json();
@@ -108,7 +115,9 @@ export function createTwelveDataSource(apiKey: string): MarketDataSource {
       const res = await fetch(url);
 
       if (!res.ok) {
-        throw new Error(`Twelve Data respondió ${res.status} al pedir historial de ${symbol}`);
+        throw new Error(
+          `Twelve Data respondió ${res.status} al pedir historial de ${symbol}`,
+        );
       }
 
       const raw = await res.json();

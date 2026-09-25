@@ -22,15 +22,15 @@ subió o bajó, y un gráfico de su evolución. Cubre mercado **US** y **Merval*
 
 **Monorepo TypeScript** (npm workspaces): `shared` · `back` · `front`.
 
-| Capa | Tecnologías |
-|---|---|
-| **Front** | React · Vite · Tailwind · TanStack Query · Recharts |
-| **Back** | Node · Fastify · Zod · Prisma |
-| **DB** | PostgreSQL (Supabase) |
-| **Auth** | JWT en cookie `httpOnly` · bcrypt |
+| Capa          | Tecnologías                                                    |
+| ------------- | -------------------------------------------------------------- |
+| **Front**     | React · Vite · Tailwind · TanStack Query · Recharts            |
+| **Back**      | Node · Fastify · Zod · Prisma                                  |
+| **DB**        | PostgreSQL (Supabase)                                          |
+| **Auth**      | JWT en cookie `httpOnly` · bcrypt                              |
 | **Seguridad** | rate limiting · CORS allowlist · Helmet · validación de inputs |
-| **Calidad** | Vitest · GitHub Actions (CI) |
-| **Deploy** | Vercel (front) · Render (back) |
+| **Calidad**   | Vitest · GitHub Actions (CI)                                   |
+| **Deploy**    | Vercel (front) · Render (back)                                 |
 
 ## 🏛️ Decisiones de arquitectura
 
@@ -68,11 +68,11 @@ npm run dev:front
 
 ## 📜 Scripts
 
-| Comando | Qué hace |
-|---|---|
-| `npm run dev:back` | Levanta la API (Fastify) |
-| `npm run dev:front` | Levanta el front (Vite) |
-| `npm test` | Corre los tests (Vitest) |
+| Comando             | Qué hace                              |
+| ------------------- | ------------------------------------- |
+| `npm run dev:back`  | Levanta la API (Fastify)              |
+| `npm run dev:front` | Levanta el front (Vite)               |
+| `npm test`          | Corre los tests (Vitest)              |
 | `npm run typecheck` | Chequea los tipos de todo el monorepo |
 
 ## 📁 Estructura

@@ -8,7 +8,12 @@ import jwt from "@fastify/jwt";
 import { z } from "zod";
 import type { MarketDataSource } from "@stock-tracker/shared";
 import { addWatch, getStoredHistory, getWatchlistSummary } from "./watchlist";
-import { createUser, findUserByEmail, findUserById, verifyPassword } from "./auth";
+import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+  verifyPassword,
+} from "./auth";
 
 // Tipos del JWT: qué guardamos en el token (payload) y qué queda en request.user.
 declare module "@fastify/jwt" {
@@ -21,7 +26,10 @@ declare module "@fastify/jwt" {
 // El decorator que protege rutas (verifica que haya un token válido).
 declare module "fastify" {
   interface FastifyInstance {
-    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    authenticate: (
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ) => Promise<void>;
   }
 }
 
@@ -41,7 +49,9 @@ const AddWatchBody = z.object({ symbol: symbolSchema });
 // Credenciales de registro/login. Password mínimo 8.
 const CredentialsBody = z.object({
   email: z.string().email(),
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+  password: z
+    .string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres."),
 });
 
 export async function buildServer(options: {
@@ -135,7 +145,9 @@ export async function buildServer(options: {
       const user = await findUserByEmail(email);
       // Mensaje genérico: no revelamos si el email existe (anti enumeración).
       if (!user || !(await verifyPassword(password, user.passwordHash))) {
-        return reply.code(401).send({ error: "Email o contraseña incorrectos" });
+        return reply
+          .code(401)
+          .send({ error: "Email o contraseña incorrectos" });
       }
       setAuthCookie(reply, app.jwt.sign({ id: user.id }));
       return { id: user.id, email: user.email };
@@ -154,13 +166,17 @@ export async function buildServer(options: {
 
   // Quién soy: el front lo usa para saber si hay sesión (la cookie es httpOnly,
   // así que no puede leerla desde JS). 200 con el usuario, o 401 vía el decorator.
-  app.get("/auth/me", { preHandler: [app.authenticate] }, async (request, reply) => {
-    const user = await findUserById(request.user.id);
-    if (!user) {
-      return reply.code(401).send({ error: "No autenticado" });
-    }
-    return user;
-  });
+  app.get(
+    "/auth/me",
+    { preHandler: [app.authenticate] },
+    async (request, reply) => {
+      const user = await findUserById(request.user.id);
+      if (!user) {
+        return reply.code(401).send({ error: "No autenticado" });
+      }
+      return user;
+    },
+  );
 
   // ── Watchlist (protegida: cada usuario ve solo la suya) ───────────────────
   app.get("/watches", { preHandler: [app.authenticate] }, async (request) => {
@@ -178,11 +194,17 @@ export async function buildServer(options: {
           .send({ error: "Body inválido", details: parsed.error.issues });
       }
       try {
-        const result = await addWatch(source, request.user.id, parsed.data.symbol);
+        const result = await addWatch(
+          source,
+          request.user.id,
+          parsed.data.symbol,
+        );
         return reply.code(201).send(result);
       } catch (err) {
         request.log.error(err);
-        return reply.code(502).send({ error: `No se pudo agregar ${parsed.data.symbol}` });
+        return reply
+          .code(502)
+          .send({ error: `No se pudo agregar ${parsed.data.symbol}` });
       }
     },
   );

@@ -21,20 +21,37 @@ export function PriceChart({ symbol }: { symbol: string }) {
   const box = "mt-6 rounded-xl border border-line bg-surface p-4";
 
   if (isLoading) {
-    return <div className={box}><p className="text-sm text-muted">Cargando gráfico…</p></div>;
+    return (
+      <div className={box}>
+        <p className="text-sm text-muted">Cargando gráfico…</p>
+      </div>
+    );
   }
   if (isError) {
-    return <div className={box}><p className="text-sm text-down">No se pudo cargar el historial.</p></div>;
+    return (
+      <div className={box}>
+        <p className="text-sm text-down">No se pudo cargar el historial.</p>
+      </div>
+    );
   }
   if (!data || data.length === 0) {
-    return <div className={box}><p className="text-sm text-muted">Sin datos de historial todavía.</p></div>;
+    return (
+      <div className={box}>
+        <p className="text-sm text-muted">Sin datos de historial todavía.</p>
+      </div>
+    );
   }
 
   return (
     <div className={box}>
-      <h2 className="mb-4 text-sm font-semibold">{symbol} · evolución del cierre</h2>
+      <h2 className="mb-4 text-sm font-semibold">
+        {symbol} · evolución del cierre
+      </h2>
       <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={data} margin={{ top: 5, right: 12, left: 0, bottom: 0 }}>
+        <LineChart
+          data={data}
+          margin={{ top: 5, right: 12, left: 0, bottom: 0 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-line)" />
           <XAxis
             dataKey="date"

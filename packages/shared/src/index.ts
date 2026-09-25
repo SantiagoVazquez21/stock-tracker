@@ -5,27 +5,27 @@
 // └──────────────────────────────────────────────────────────────────────┘
 
 export interface Quote {
-    symbol: string;
-    price: number;
-    changePct: number;
-    asOf: Date;
+  symbol: string;
+  price: number;
+  changePct: number;
+  asOf: Date;
 }
 
 export interface Candle {
-    date: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 }
 
 export type Range = "1W" | "1M" | "3M" | "6M" | "1Y";
 
 export interface MarketDataSource {
-    name: string;
-    supports(symbol: string): boolean;
-    getQuote(symbol: string): Promise<Quote>;
-    getHistory(symbol: string, range: Range): Promise<Candle[]>;
+  name: string;
+  supports(symbol: string): boolean;
+  getQuote(symbol: string): Promise<Quote>;
+  getHistory(symbol: string, range: Range): Promise<Candle[]>;
 }
 
 // ── Contratos de la API (lo que viaja por HTTP entre back y front) ──────────
@@ -33,23 +33,23 @@ export interface MarketDataSource {
 
 // Una fila de la watchlist con su "% desde que empecé". Lo devuelve GET /watches.
 export interface WatchSummary {
-    symbol: string;
-    name: string;
-    startedAt: string;
-    startClose: number | null;
-    lastClose: number | null;
-    lastDate: string | null;
-    pctSinceStart: number | null;
+  symbol: string;
+  name: string;
+  startedAt: string;
+  startClose: number | null;
+  lastClose: number | null;
+  lastDate: string | null;
+  pctSinceStart: number | null;
 }
 
 // Un punto del historial para el gráfico. Lo devuelve GET /watches/:symbol/history.
 export interface HistoryPoint {
-    date: string;
-    close: number;
+  date: string;
+  close: number;
 }
 
 // El usuario autenticado (sin datos sensibles). Lo devuelven register/login/me.
 export interface AuthUser {
-    id: number;
-    email: string;
+  id: number;
+  email: string;
 }

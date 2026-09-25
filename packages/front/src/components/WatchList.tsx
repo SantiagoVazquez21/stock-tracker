@@ -72,7 +72,9 @@ function WatchCard({ watch, isSelected, onClick }: WatchCardProps) {
           <p className="font-medium">
             {watch.lastClose != null ? `$${watch.lastClose.toFixed(2)}` : "—"}
           </p>
-          <p className={`text-xs font-medium ${isUp ? "text-up" : "text-down"}`}>
+          <p
+            className={`text-xs font-medium ${isUp ? "text-up" : "text-down"}`}
+          >
             {pct != null ? `${isUp ? "+" : ""}${pct.toFixed(2)}%` : "—"}
           </p>
         </div>

@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { Quote, Candle, Range, MarketDataSource } from "@stock-tracker/shared";
+import type {
+  Quote,
+  Candle,
+  Range,
+  MarketDataSource,
+} from "@stock-tracker/shared";
 
 const BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart";
 
