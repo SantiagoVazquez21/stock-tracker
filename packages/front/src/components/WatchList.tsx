@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import type { WatchSummary } from "@stock-tracker/shared";
 import { getWatches, removeWatch } from "../api";
-import { Monogram, Sparkline } from "./Sparkline";
+import { Sparkline, TickerLogo } from "./Sparkline";
 import { Money, Pct } from "./AnimatedNumber";
 
 interface WatchListProps {
@@ -147,7 +147,7 @@ function WatchRow({ watch, index, isSelected, onSelect }: WatchRowProps) {
               isSelected ? "bg-accent" : "bg-transparent"
             }`}
           />
-          <Monogram symbol={watch.symbol} />
+          <TickerLogo symbol={watch.symbol} />
           <div className="min-w-0">
             <p className="font-semibold">{watch.symbol}</p>
             <p className="truncate text-xs text-muted">{watch.name}</p>

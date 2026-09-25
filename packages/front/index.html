@@ -11,6 +11,24 @@
     <meta name="theme-color" content="#191b21" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- Tema antes del primer paint (evita el "flash" de color): usa la preferencia
+         guardada o, si no hay, la del sistema operativo. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("theme");
+          if (t !== "light" && t !== "dark") {
+            t = window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+          }
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+
     <!-- Open Graph (cómo se ve el link al compartirlo en WhatsApp, etc.) -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Ticker — tu tracker de mercado" />

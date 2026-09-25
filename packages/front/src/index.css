@@ -26,6 +26,20 @@
   --color-accent-contrast: hsl(225 25% 8%); /* texto/íconos sobre ámbar */
 }
 
+/* Tema CLARO: redefine los tokens cuando <html data-theme="light">. Como las
+   utilidades de Tailwind v4 leen var(--color-*), recolorear acá alcanza para
+   dar vuelta toda la app. El ámbar de marca se mantiene (funciona en ambos). */
+:root[data-theme="light"] {
+  --color-base: hsl(225 30% 97%);
+  --color-surface: hsl(0 0% 100%);
+  --color-surface-2: hsl(225 25% 94%);
+  --color-line: hsl(225 18% 87%);
+  --color-content: hsl(225 30% 13%);
+  --color-muted: hsl(225 12% 40%);
+  --color-up: hsl(142 66% 34%); /* más oscuro para contraste sobre blanco */
+  --color-down: hsl(0 70% 45%);
+}
+
 @layer base {
   html {
     font-family: var(--font-sans);
@@ -115,4 +129,72 @@
   .flash-down {
     animation: none;
   }
+}
+
+/* Command palette (cmdk). Estiliza vía selectores por atributo, el método propio
+   de la librería. Usa los tokens del tema, así funciona en claro y oscuro. */
+[cmdk-overlay] {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(2px);
+}
+[cmdk-dialog] {
+  position: fixed;
+  top: 18%;
+  left: 50%;
+  z-index: 51;
+  width: min(560px, calc(100vw - 2rem));
+  transform: translateX(-50%);
+}
+[cmdk-root] {
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px -12px rgb(0 0 0 / 0.6);
+}
+[cmdk-input] {
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 1px solid var(--color-line);
+  background: transparent;
+  color: var(--color-content);
+  font-size: 14px;
+  outline: none;
+}
+[cmdk-input]::placeholder {
+  color: var(--color-muted);
+}
+[cmdk-list] {
+  max-height: 320px;
+  overflow: auto;
+  padding: 6px;
+}
+[cmdk-group-heading] {
+  padding: 8px 10px 4px;
+  color: var(--color-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+[cmdk-item] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+[cmdk-item][data-selected="true"] {
+  background: var(--color-surface-2);
+}
+[cmdk-empty] {
+  padding: 16px;
+  color: var(--color-muted);
+  font-size: 13px;
+  text-align: center;
 }

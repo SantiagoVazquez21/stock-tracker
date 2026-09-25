@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getHistory, getQuote, getWatches } from "../api";
-import { Monogram } from "./Sparkline";
+import { TickerLogo } from "./Sparkline";
 import { Money, Pct } from "./AnimatedNumber";
 import { PriceChart } from "./PriceChart";
 
@@ -33,7 +33,7 @@ export function TickerDetail({ symbol }: { symbol: string }) {
   return (
     <section className="mt-6">
       <div className="mb-3 flex items-center gap-3">
-        <Monogram symbol={symbol} />
+        <TickerLogo symbol={symbol} />
         <div>
           <h2 className="font-semibold leading-tight">{symbol}</h2>
           {quote.data?.name && (

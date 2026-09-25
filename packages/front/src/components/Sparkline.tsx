@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 // Sparkline: un mini-gráfico de línea sin ejes ni tooltip, para meter DENTRO de
 // una fila de la tabla. Es el detalle que hace que una watchlist se vea como
 // TradingView y no como una lista de tareas. Lo dibujo a mano con un <polyline>
@@ -75,5 +77,31 @@ export function Monogram({ symbol }: { symbol: string }) {
     >
       {letters}
     </span>
+  );
+}
+
+// Logo real de la empresa vía logo.dev (token público, va en la URL de la imagen).
+// Si no hay token configurado o el logo no existe (404, ej. tickers .BA del Merval),
+// cae al Monograma. El token se pone en VITE_LOGODEV_TOKEN (env del front).
+export function TickerLogo({ symbol }: { symbol: string }) {
+  const token = import.meta.env.VITE_LOGODEV_TOKEN as string | undefined;
+  const [failed, setFailed] = useState(false);
+
+  // logo.dev busca por ticker sin sufijo de mercado (AAPL, no GGAL.BA).
+  const ticker = symbol.replace(/\.[A-Z]+$/, "");
+
+  if (!token || failed) return <Monogram symbol={symbol} />;
+
+  return (
+    <img
+      src={`https://img.logo.dev/ticker/${encodeURIComponent(ticker)}?token=${token}&size=64&format=png`}
+      alt=""
+      aria-hidden
+      loading="lazy"
+      width={32}
+      height={32}
+      onError={() => setFailed(true)}
+      className="h-8 w-8 shrink-0 rounded-md bg-surface-2 object-contain"
+    />
   );
 }

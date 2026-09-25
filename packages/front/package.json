@@ -12,6 +12,7 @@
     "@number-flow/react": "^0.6.2",
     "@stock-tracker/shared": "*",
     "@tanstack/react-query": "^5.103.2",
+    "cmdk": "^1.1.1",
     "motion": "^13.4.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

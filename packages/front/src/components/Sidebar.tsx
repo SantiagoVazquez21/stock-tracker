@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { me } from "../api";
 import { Logo } from "./Logo";
 import { LogoutButton } from "./LogoutButton";
+import { ThemeToggle } from "./ThemeToggle";
 
 // Barra lateral de navegación. En desktop (md+) es un rail vertical fijo a la
 // izquierda; en mobile colapsa a una barra superior (logo + logout). El email lo
@@ -25,14 +26,17 @@ export function Sidebar() {
         </span>
       </nav>
 
-      {/* Al fondo en desktop: usuario + logout. En mobile solo el logout. */}
+      {/* Al fondo en desktop: usuario + tema + logout. En mobile, tema + logout. */}
       <div className="flex items-center gap-3 md:mt-auto md:flex-col md:items-stretch md:gap-2">
         {user && (
           <p className="hidden truncate text-xs text-muted md:block">
             {user.email}
           </p>
         )}
-        <LogoutButton />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LogoutButton />
+        </div>
       </div>
     </aside>
   );
