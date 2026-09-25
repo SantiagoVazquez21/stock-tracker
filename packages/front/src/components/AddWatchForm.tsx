@@ -54,7 +54,7 @@ export function AddWatchForm() {
       )}
 
       {showDropdown && (
-        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-line bg-surface shadow-lg">
+        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-line bg-surface shadow-[0_12px_28px_-8px_rgb(0_0_0/0.55)]">
           {results.map((r) => (
             <li key={`${r.symbol}-${r.exchange}`}>
               <button

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AuthGate } from "./components/AuthGate";
+import { Logo } from "./components/Logo";
 import { LogoutButton } from "./components/LogoutButton";
 import { AddWatchForm } from "./components/AddWatchForm";
 import { WatchList } from "./components/WatchList";
@@ -16,8 +17,8 @@ export function App() {
         <AuthGate>
           <header className="mb-8 flex items-start justify-between gap-4">
             <div>
-              <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-                <span aria-hidden>📈</span> Ticker
+              <h1 className="text-3xl">
+                <Logo />
               </h1>
               <p className="mt-1 text-sm text-muted">
                 Seguí el mercado desde el día que lo empezás a trackear.

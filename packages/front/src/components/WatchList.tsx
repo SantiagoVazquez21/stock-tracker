@@ -13,15 +13,16 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
     queryFn: getWatches,
   });
 
-  // Skeleton: unas tarjetas "fantasma" que pulsan mientras carga. Se siente más
-  // pulido que un texto "Cargando…" y evita el salto de layout.
+  // Skeleton: tarjetas "fantasma" con shimmer (un brillo que barre) mientras
+  // carga. Se lee como "cargando datos" y evita el salto de layout. La clase
+  // .skeleton está en index.css y respeta prefers-reduced-motion.
   if (isLoading) {
     return (
       <ul className="flex flex-col gap-2">
         {[0, 1, 2].map((i) => (
           <li
             key={i}
-            className="h-[70px] animate-pulse rounded-xl border border-line bg-surface"
+            className="skeleton h-[70px] rounded-xl border border-line"
           />
         ))}
       </ul>
@@ -39,7 +40,32 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
   if (!data || data.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-line px-4 py-12 text-center">
-        <p className="text-3xl">📈</p>
+        <svg
+          viewBox="0 0 48 48"
+          aria-hidden
+          className="mx-auto h-12 w-12 text-muted"
+        >
+          <rect
+            x="4"
+            y="6"
+            width="40"
+            height="36"
+            rx="6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            opacity="0.5"
+          />
+          <path
+            d="M10 31 L18 22 L24 27 L38 13"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="38" cy="13" r="2.6" fill="currentColor" />
+        </svg>
         <p className="mt-3 font-medium">Tu watchlist está vacía</p>
         <p className="mt-1 text-sm text-muted">
           Buscá una acción arriba (ej.{" "}

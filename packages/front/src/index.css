@@ -1,20 +1,29 @@
 @import "tailwindcss";
 
-/* Sistema de diseño (dark mode, estilo fintech). Estos tokens generan las
-   utilidades de Tailwind: bg-base, bg-surface, text-up, text-down, etc. */
+/* ────────────────────────────────────────────────────────────────────────────
+   Sistema de diseño (dark, estilo fintech). Estos tokens generan las utilidades
+   de Tailwind: bg-base, bg-surface, text-up, text-down, text-accent, etc.
+   ──────────────────────────────────────────────────────────────────────────── */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
+  /* Neutros: dark con un leve matiz frío (hue 225) para que NO se vea "gris IA". */
   --color-base: hsl(225 15% 10%); /* fondo de la app */
-  --color-surface: hsl(225 12% 14%); /* tarjetas */
+  --color-surface: hsl(225 12% 14%); /* tarjetas / tabla */
   --color-surface-2: hsl(225 12% 18%); /* hover / elevado */
-  --color-line: hsl(225 10% 22%); /* bordes/divisores */
+  --color-line: hsl(225 10% 22%); /* bordes/divisores (hairline) */
   --color-content: hsl(225 15% 92%); /* texto principal */
-  --color-muted: hsl(225 10% 62%); /* texto secundario */
+  --color-muted: hsl(225 10% 62%); /* texto secundario / labels */
 
+  /* Semánticos: SOLO para subas y bajas. No usar de decoración. */
   --color-up: #22c55e; /* sube */
   --color-down: #ef4444; /* baja */
-  --color-accent: #6366f1; /* acciones / CTA */
+
+  /* Marca: ámbar/dorado. Reemplaza el indigo #6366f1 (default de las demos IA).
+     Es brillante, así que el texto encima va OSCURO (accent-contrast), no blanco. */
+  --color-accent: hsl(38 95% 55%); /* ≈ #f9a825 — CTA / marca / foco */
+  --color-accent-hover: hsl(38 95% 48%); /* estado :hover del CTA */
+  --color-accent-contrast: hsl(225 25% 8%); /* texto/íconos sobre ámbar */
 }
 
 @layer base {
@@ -24,5 +33,45 @@
   body {
     background-color: var(--color-base);
     color: var(--color-content);
+    /* Números tabulares en toda la app: los dígitos ocupan el mismo ancho, así
+       precios y porcentajes quedan alineados en columnas (detalle "de producto"). */
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Skeleton con "shimmer": un brillo que barre de izquierda a derecha. Se lee
+     como "cargando datos" (no como algo roto/parpadeando, que es lo que hace el
+     pulse). Anima solo `transform` → corre en GPU, barato. */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--color-surface);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.06),
+      transparent
+    );
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+/* Accesibilidad: si el usuario pidió "menos movimiento" en su SO, apagamos el
+   shimmer. Regla de oro del motion design, sin excepciones. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
   }
 }

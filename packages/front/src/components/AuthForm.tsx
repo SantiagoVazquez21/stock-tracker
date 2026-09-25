@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { login, register } from "../api";
+import { Logo } from "./Logo";
 
 export function AuthForm() {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -27,7 +28,9 @@ export function AuthForm() {
 
   return (
     <div className="mx-auto max-w-sm pt-10">
-      <h1 className="text-3xl font-bold tracking-tight">Ticker</h1>
+      <h1 className="text-3xl">
+        <Logo />
+      </h1>
       <p className="mb-6 mt-1 text-sm text-muted">
         {mode === "login"
           ? "Iniciá sesión para ver tu watchlist."
@@ -54,7 +57,7 @@ export function AuthForm() {
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-contrast transition hover:bg-accent-hover disabled:opacity-50"
         >
           {mutation.isPending
             ? "Un momento…"
