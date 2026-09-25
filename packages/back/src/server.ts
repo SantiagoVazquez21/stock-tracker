@@ -226,6 +226,27 @@ export async function buildServer(options: {
     },
   );
 
+  // Precio EN VIVO (on-demand): va directo al proveedor. Se pide solo cuando el
+  // usuario mira el detalle de un símbolo, no en la lista.
+  app.get<{ Params: { symbol: string } }>(
+    "/watches/:symbol/quote",
+    { preHandler: [app.authenticate] },
+    async (request, reply) => {
+      const parsed = symbolSchema.safeParse(request.params.symbol);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: "Símbolo inválido" });
+      }
+      try {
+        return await source.getQuote(parsed.data);
+      } catch (err) {
+        request.log.error(err);
+        return reply
+          .code(502)
+          .send({ error: `No se pudo obtener el precio de ${parsed.data}` });
+      }
+    },
+  );
+
   // Dejar de seguir un símbolo.
   app.delete<{ Params: { symbol: string } }>(
     "/watches/:symbol",

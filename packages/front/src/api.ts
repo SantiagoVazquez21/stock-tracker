@@ -2,6 +2,7 @@ import type {
   WatchSummary,
   HistoryPoint,
   AuthUser,
+  Quote,
 } from "@stock-tracker/shared";
 
 // La URL del back. Configurable por entorno (Vite expone las vars VITE_*),
@@ -48,6 +49,13 @@ export function removeWatch(symbol: string) {
   return request<void>(`/watches/${encodeURIComponent(symbol)}`, {
     method: "DELETE",
   });
+}
+
+// GET /watches/:symbol/quote → precio EN VIVO (on-demand). Omitimos asOf porque
+// por HTTP llega como string; en el front usamos precio, % y nombre.
+type LiveQuote = Pick<Quote, "symbol" | "name" | "price" | "changePct">;
+export function getQuote(symbol: string) {
+  return request<LiveQuote>(`/watches/${encodeURIComponent(symbol)}/quote`);
 }
 
 // GET /watches/:symbol/history → puntos para el gráfico.
