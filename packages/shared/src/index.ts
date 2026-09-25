@@ -47,3 +47,9 @@ export interface HistoryPoint {
     date: string;
     close: number;
 }
+
+// El usuario autenticado (sin datos sensibles). Lo devuelven register/login/me.
+export interface AuthUser {
+    id: number;
+    email: string;
+}

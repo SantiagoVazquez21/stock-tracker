@@ -8,7 +8,7 @@ import jwt from "@fastify/jwt";
 import { z } from "zod";
 import type { MarketDataSource } from "@stock-tracker/shared";
 import { addWatch, getStoredHistory, getWatchlistSummary } from "./watchlist";
-import { createUser, findUserByEmail, verifyPassword } from "./auth";
+import { createUser, findUserByEmail, findUserById, verifyPassword } from "./auth";
 
 // Tipos del JWT: qué guardamos en el token (payload) y qué queda en request.user.
 declare module "@fastify/jwt" {
@@ -141,6 +141,16 @@ export async function buildServer(options: {
   app.post("/auth/logout", async (_request, reply) => {
     reply.clearCookie("token", { path: "/" });
     return { ok: true };
+  });
+
+  // Quién soy: el front lo usa para saber si hay sesión (la cookie es httpOnly,
+  // así que no puede leerla desde JS). 200 con el usuario, o 401 vía el decorator.
+  app.get("/auth/me", { preHandler: [app.authenticate] }, async (request, reply) => {
+    const user = await findUserById(request.user.id);
+    if (!user) {
+      return reply.code(401).send({ error: "No autenticado" });
+    }
+    return user;
   });
 
   // ── Watchlist (protegida: cada usuario ve solo la suya) ───────────────────

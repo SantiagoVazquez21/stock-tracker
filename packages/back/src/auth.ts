@@ -29,3 +29,11 @@ export async function createUser(email: string, password: string) {
 export function findUserByEmail(email: string) {
   return prisma.user.findUnique({ where: { email } });
 }
+
+// Busca por id, sin el passwordHash. Lo usa GET /auth/me.
+export function findUserById(id: number) {
+  return prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true },
+  });
+}
