@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { WatchSummary } from "@stock-tracker/shared";
 import { getWatches } from "../api";
+import { Int, Pct } from "./AnimatedNumber";
 
 // Tira de "stat tiles" arriba de la tabla: el resumen de la cartera de un vistazo.
 // Lee la MISMA query ["watches"] que la tabla (cacheada por TanStack Query), así
@@ -25,14 +27,14 @@ export function SummaryStrip() {
 
   return (
     <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Tile label="Siguiendo" value={String(data.length)} />
-      <Tile label="En alza" value={String(up)} tone="up" />
-      <Tile label="En baja" value={String(down)} tone="down" />
+      <Tile label="Siguiendo" value={<Int value={data.length} />} />
+      <Tile label="En alza" value={<Int value={up} />} tone="up" />
+      <Tile label="En baja" value={<Int value={down} />} tone="down" />
       {best && (
         <Tile
           label="Mejor"
           value={best.symbol}
-          hint={`${best.pctSinceStart >= 0 ? "+" : ""}${best.pctSinceStart.toFixed(1)}%`}
+          hint={<Pct value={best.pctSinceStart} sign />}
           tone={best.pctSinceStart >= 0 ? "up" : "down"}
         />
       )}
@@ -47,8 +49,8 @@ function Tile({
   tone,
 }: {
   label: string;
-  value: string;
-  hint?: string;
+  value: ReactNode;
+  hint?: ReactNode;
   tone?: "up" | "down";
 }) {
   const toneClass =
@@ -58,7 +60,7 @@ function Tile({
       <p className="text-xs font-medium uppercase tracking-wide text-muted">
         {label}
       </p>
-      <div className="mt-1 flex items-baseline gap-2">
+      <div className="mt-1 flex items-baseline gap-2 tabular-nums">
         <span className={`text-xl font-semibold ${toneClass}`}>{value}</span>
         {hint && (
           <span className={`text-xs font-medium ${toneClass}`}>{hint}</span>

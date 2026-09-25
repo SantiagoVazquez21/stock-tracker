@@ -79,13 +79,40 @@
       opacity: 1;
     }
   }
+
+  /* Flash direccional: un tinte verde/rojo que se desvanece cuando el precio en
+     vivo cambia (sube/baja). Convención de las apps de trading. */
+  .flash-up {
+    animation: flashUp 0.5s ease-out;
+  }
+  .flash-down {
+    animation: flashDown 0.5s ease-out;
+  }
+  @keyframes flashUp {
+    from {
+      background-color: rgb(34 197 94 / 0.25);
+    }
+    to {
+      background-color: transparent;
+    }
+  }
+  @keyframes flashDown {
+    from {
+      background-color: rgb(239 68 68 / 0.25);
+    }
+    to {
+      background-color: transparent;
+    }
+  }
 }
 
 /* Accesibilidad: si el usuario pidió "menos movimiento" en su SO, apagamos las
    animaciones propias. Regla de oro del motion design, sin excepciones. */
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after,
-  .chart-fade {
+  .chart-fade,
+  .flash-up,
+  .flash-down {
     animation: none;
   }
 }

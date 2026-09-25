@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "motion/react";
 import { addWatch, searchSymbols } from "../api";
 
 export function AddWatchForm() {
@@ -53,26 +54,36 @@ export function AddWatchForm() {
         </p>
       )}
 
-      {showDropdown && (
-        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-line bg-surface shadow-[0_12px_28px_-8px_rgb(0_0_0/0.55)]">
-          {results.map((r) => (
-            <li key={`${r.symbol}-${r.exchange}`}>
-              <button
-                onClick={() => add.mutate(r.symbol)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition hover:bg-surface-2"
-              >
-                <span className="min-w-0">
-                  <span className="font-semibold">{r.symbol}</span>{" "}
-                  <span className="text-muted">{r.name}</span>
-                </span>
-                <span className="shrink-0 text-xs text-muted">
-                  {r.exchange}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <AnimatePresence>
+        {showDropdown && (
+          <motion.ul
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            style={{ transformOrigin: "top" }}
+            className="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-line bg-surface shadow-[0_12px_28px_-8px_rgb(0_0_0/0.55)]"
+          >
+            {results.map((r) => (
+              <li key={`${r.symbol}-${r.exchange}`}>
+                <motion.button
+                  onClick={() => add.mutate(r.symbol)}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors hover:bg-surface-2"
+                >
+                  <span className="min-w-0">
+                    <span className="font-semibold">{r.symbol}</span>{" "}
+                    <span className="text-muted">{r.name}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-muted">
+                    {r.exchange}
+                  </span>
+                </motion.button>
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

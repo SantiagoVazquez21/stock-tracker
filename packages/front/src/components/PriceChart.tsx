@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Area,
@@ -9,7 +9,25 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { motion } from "motion/react";
 import { getHistory, getQuote } from "../api";
+import { Money, Pct } from "./AnimatedNumber";
+
+// Devuelve una clase de "flash" (verde/rojo) por ~500ms cuando `value` cambia
+// respecto del render anterior. Para el precio en vivo, que se actualiza al poll.
+function useFlash(value?: number): string {
+  const prev = useRef<number | undefined>(undefined);
+  const [cls, setCls] = useState("");
+  useEffect(() => {
+    const p = prev.current;
+    prev.current = value;
+    if (p == null || value == null || value === p) return;
+    setCls(value > p ? "flash-up" : "flash-down");
+    const t = setTimeout(() => setCls(""), 500);
+    return () => clearTimeout(t);
+  }, [value]);
+  return cls;
+}
 
 // Cada rango = cuántos días (de trading) del final mostramos.
 const RANGES = { "1S": 5, "1M": 22, "3M": 66, "6M": 132, "1A": 252 } as const;
@@ -67,6 +85,7 @@ export function PriceChart({ symbol }: { symbol: string }) {
   const box =
     "mt-6 min-w-0 overflow-hidden rounded-xl border border-line bg-surface p-4";
   const dayUp = (quote.data?.changePct ?? 0) >= 0;
+  const flashCls = useFlash(quote.data?.price);
 
   // Recortamos el historial ya cargado a los últimos N puntos del rango elegido.
   const points = history.data?.slice(-RANGES[range]) ?? [];
@@ -87,15 +106,14 @@ export function PriceChart({ symbol }: { symbol: string }) {
           {symbol} <span className="font-normal text-muted">· evolución</span>
         </h2>
         {quote.data && (
-          <div className="tabular-nums">
+          <div className={`rounded px-1.5 tabular-nums ${flashCls}`}>
             <span className="font-semibold">
-              ${quote.data.price.toFixed(2)}
+              <Money value={quote.data.price} />
             </span>{" "}
             <span
               className={`text-xs font-medium ${dayUp ? "text-up" : "text-down"}`}
             >
-              {dayUp ? "+" : ""}
-              {quote.data.changePct.toFixed(2)}% hoy
+              <Pct value={quote.data.changePct} sign /> hoy
             </span>
           </div>
         )}
@@ -103,9 +121,10 @@ export function PriceChart({ symbol }: { symbol: string }) {
 
       <div className="mb-3 flex gap-1">
         {(Object.keys(RANGES) as RangeKey[]).map((r) => (
-          <button
+          <motion.button
             key={r}
             onClick={() => setRange(r)}
+            whileTap={{ scale: 0.94 }}
             className={`rounded px-2.5 py-1 text-xs font-medium transition ${
               r === range
                 ? "bg-accent text-accent-contrast"
@@ -113,7 +132,7 @@ export function PriceChart({ symbol }: { symbol: string }) {
             }`}
           >
             {r}
-          </button>
+          </motion.button>
         ))}
       </div>
 

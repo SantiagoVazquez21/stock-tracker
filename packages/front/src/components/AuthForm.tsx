@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "motion/react";
 import { login, register } from "../api";
 import { Logo } from "./Logo";
 
@@ -54,9 +55,10 @@ export function AuthForm() {
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           className={input}
         />
-        <button
+        <motion.button
           type="submit"
           disabled={mutation.isPending}
+          whileTap={{ scale: 0.98 }}
           className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-contrast transition hover:bg-accent-hover disabled:opacity-50"
         >
           {mutation.isPending
@@ -64,7 +66,7 @@ export function AuthForm() {
             : mode === "login"
               ? "Iniciar sesión"
               : "Registrarme"}
-        </button>
+        </motion.button>
       </form>
 
       {mutation.isError && (

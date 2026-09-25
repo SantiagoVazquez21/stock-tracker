@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getHistory, getQuote, getWatches } from "../api";
 import { Monogram } from "./Sparkline";
+import { Money, Pct } from "./AnimatedNumber";
 import { PriceChart } from "./PriceChart";
 
 // Panel de detalle del símbolo seleccionado (patrón master-detail: la fila de la
@@ -43,21 +45,25 @@ export function TickerDetail({ symbol }: { symbol: string }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat
           label="Precio"
-          value={quote.data ? `$${quote.data.price.toFixed(2)}` : "—"}
+          value={quote.data ? <Money value={quote.data.price} /> : "—"}
         />
-        <Stat label="Hoy" value={fmtPct(dayPct)} tone={toneOf(dayPct)} />
+        <Stat
+          label="Hoy"
+          value={dayPct != null ? <Pct value={dayPct} sign /> : "—"}
+          tone={toneOf(dayPct)}
+        />
         <Stat
           label="Desde inicio"
-          value={fmtPct(sincePct)}
+          value={sincePct != null ? <Pct value={sincePct} sign /> : "—"}
           tone={toneOf(sincePct)}
         />
         <Stat
           label="Máx rango"
-          value={max != null ? `$${max.toFixed(2)}` : "—"}
+          value={max != null ? <Money value={max} /> : "—"}
         />
         <Stat
           label="Mín rango"
-          value={min != null ? `$${min.toFixed(2)}` : "—"}
+          value={min != null ? <Money value={min} /> : "—"}
         />
       </div>
 
@@ -84,7 +90,7 @@ function Stat({
   tone,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   tone?: "up" | "down";
 }) {
   const toneClass =
@@ -102,9 +108,4 @@ function Stat({
 function toneOf(pct: number | null): "up" | "down" | undefined {
   if (pct == null) return undefined;
   return pct >= 0 ? "up" : "down";
-}
-
-function fmtPct(pct: number | null): string {
-  if (pct == null) return "—";
-  return `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }

@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "motion/react";
 import type { WatchSummary } from "@stock-tracker/shared";
 import { getWatches, removeWatch } from "../api";
 import { Monogram, Sparkline } from "./Sparkline";
+import { Money, Pct } from "./AnimatedNumber";
 
 interface WatchListProps {
   selected: string | null;
@@ -90,14 +92,19 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
           </tr>
         </thead>
         <tbody>
-          {data.map((w) => (
-            <WatchRow
-              key={w.symbol}
-              watch={w}
-              isSelected={w.symbol === selected}
-              onSelect={() => onSelect(w.symbol)}
-            />
-          ))}
+          {/* AnimatePresence: mantiene la fila montada mientras hace su animación
+              de salida (exit) al borrarla. La entrada va escalonada por índice. */}
+          <AnimatePresence initial={true}>
+            {data.map((w, i) => (
+              <WatchRow
+                key={w.symbol}
+                watch={w}
+                index={i}
+                isSelected={w.symbol === selected}
+                onSelect={() => onSelect(w.symbol)}
+              />
+            ))}
+          </AnimatePresence>
         </tbody>
       </table>
     </div>
@@ -106,11 +113,12 @@ export function WatchList({ selected, onSelect }: WatchListProps) {
 
 interface WatchRowProps {
   watch: WatchSummary;
+  index: number;
   isSelected: boolean;
   onSelect: () => void;
 }
 
-function WatchRow({ watch, isSelected, onSelect }: WatchRowProps) {
+function WatchRow({ watch, index, isSelected, onSelect }: WatchRowProps) {
   const pct = watch.pctSinceStart;
   const isUp = (pct ?? 0) >= 0;
 
@@ -121,9 +129,13 @@ function WatchRow({ watch, isSelected, onSelect }: WatchRowProps) {
   });
 
   return (
-    <tr
+    <motion.tr
       onClick={onSelect}
-      className={`cursor-pointer border-b border-line transition last:border-b-0 hover:bg-surface-2 ${
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, delay: index * 0.04 }}
+      className={`cursor-pointer border-b border-line transition-colors last:border-b-0 hover:bg-surface-2 ${
         isSelected ? "bg-surface-2" : ""
       }`}
     >
@@ -144,7 +156,7 @@ function WatchRow({ watch, isSelected, onSelect }: WatchRowProps) {
       </td>
 
       <td className="px-4 py-3 text-right font-medium tabular-nums">
-        {watch.lastClose != null ? `$${watch.lastClose.toFixed(2)}` : "—"}
+        {watch.lastClose != null ? <Money value={watch.lastClose} /> : "—"}
       </td>
 
       <td
@@ -152,7 +164,13 @@ function WatchRow({ watch, isSelected, onSelect }: WatchRowProps) {
           isUp ? "text-up" : "text-down"
         }`}
       >
-        {pct != null ? `${isUp ? "▲" : "▼"} ${Math.abs(pct).toFixed(2)}%` : "—"}
+        {pct != null ? (
+          <span>
+            {isUp ? "▲" : "▼"} <Pct value={Math.abs(pct)} />
+          </span>
+        ) : (
+          "—"
+        )}
       </td>
 
       <td className="hidden px-4 py-3 sm:table-cell">
@@ -162,19 +180,20 @@ function WatchRow({ watch, isSelected, onSelect }: WatchRowProps) {
       </td>
 
       <td className="px-2 py-3 text-right">
-        <button
+        <motion.button
           onClick={(e) => {
             e.stopPropagation(); // no seleccionar la fila al borrar
             remove.mutate();
           }}
+          whileTap={{ scale: 0.9 }}
           disabled={remove.isPending}
           aria-label={`Dejar de seguir ${watch.symbol}`}
           title="Dejar de seguir"
           className="rounded-lg px-2 py-1 text-muted transition hover:text-down disabled:opacity-50"
         >
           ✕
-        </button>
+        </motion.button>
       </td>
-    </tr>
+    </motion.tr>
   );
 }
