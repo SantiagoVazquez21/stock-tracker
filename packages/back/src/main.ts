@@ -42,18 +42,18 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") ?? [
   "http://localhost:5174",
 ];
 
-// Key de Finnhub para el panel de noticias. Es OPCIONAL: si falta, /news devuelve
-// [] y el front muestra "sin noticias" (no se cae nada).
-const finnhubApiKey = process.env.FINNHUB_API_KEY;
-if (!finnhubApiKey) {
-  console.warn("⚠️  Sin FINNHUB_API_KEY: el panel de noticias irá vacío.");
+// Token de Marketaux para el panel de noticias analizadas. OPCIONAL: si falta,
+// /news devuelve [] y el front muestra "sin noticias" (no se cae nada).
+const marketauxToken = process.env.MARKETAUX_API_TOKEN;
+if (!marketauxToken) {
+  console.warn("⚠️  Sin MARKETAUX_API_TOKEN: el panel de noticias irá vacío.");
 }
 
 const app = await buildServer({
   source,
   allowedOrigins,
   jwtSecret,
-  finnhubApiKey,
+  marketauxToken,
 });
 
 // Worker diario: a las 22:00 (tras el cierre del mercado US) actualiza los

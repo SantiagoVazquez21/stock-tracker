@@ -68,7 +68,7 @@ export async function buildServer(options: {
   logger?: boolean;
   rateLimitMax?: number;
   allowedOrigins?: string[];
-  finnhubApiKey?: string;
+  marketauxToken?: string;
 }) {
   const { source } = options;
   const app = Fastify({ logger: options.logger ?? true });
@@ -205,13 +205,13 @@ export async function buildServer(options: {
     },
   );
 
-  // Noticias de mercado ya filtradas por relevancia. Le paso los símbolos del
-  // usuario para taggear/priorizar las que tocan su watchlist. La key de Finnhub
-  // vive acá en el back (nunca en el navegador).
+  // Noticias de mercado ya analizadas (relevancia + acciones afectadas + signo).
+  // Le paso los símbolos del usuario para marcar/priorizar las que tocan su
+  // watchlist. El token de Marketaux vive acá en el back (nunca en el navegador).
   app.get("/news", { preHandler: [app.authenticate] }, async (request) => {
     const watches = await listWatches(request.user.id);
     return getMarketNews(
-      options.finnhubApiKey,
+      options.marketauxToken,
       watches.map((w) => w.symbol),
     );
   });

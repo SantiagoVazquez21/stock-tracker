@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import type { NewsItem } from "@stock-tracker/shared";
+import type { AffectedTicker, NewsItem } from "@stock-tracker/shared";
 import { getNews } from "../api";
 
 // "hace 3 min", "hace 2 h", etc.
@@ -21,14 +21,14 @@ interface NewsPanelProps {
 }
 
 export function NewsPanel({ open, onClose }: NewsPanelProps) {
-  // Solo pollea con el panel abierto (enabled + refetchInterval atados a `open`),
-  // así no gastamos pedidos cuando está cerrado.
+  // Solo pollea con el panel abierto. El back cachea 45 min, así que este poll
+  // solo relee el caché y mantiene fresco el "hace…".
   const { data, isLoading, isError } = useQuery({
     queryKey: ["news"],
     queryFn: getNews,
     enabled: open,
-    refetchInterval: open ? 60_000 : false,
-    staleTime: 30_000,
+    refetchInterval: open ? 5 * 60_000 : false,
+    staleTime: 60_000,
   });
   const items = data ?? [];
 
@@ -36,7 +36,6 @@ export function NewsPanel({ open, onClose }: NewsPanelProps) {
     <AnimatePresence>
       {open && (
         <>
-          {/* Fondo oscuro: click afuera = cerrar. */}
           <motion.div
             className="fixed inset-0 z-40 bg-black/40"
             initial={{ opacity: 0 }}
@@ -46,7 +45,6 @@ export function NewsPanel({ open, onClose }: NewsPanelProps) {
             aria-hidden
           />
 
-          {/* Panel lateral que entra deslizándose desde la derecha. */}
           <motion.aside
             className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-line bg-surface"
             initial={{ x: "100%" }}
@@ -60,7 +58,9 @@ export function NewsPanel({ open, onClose }: NewsPanelProps) {
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-up" />
                 <h2 className="font-semibold">Noticias</h2>
-                <span className="text-xs text-muted">de mercado · en vivo</span>
+                <span className="text-xs text-muted">
+                  de mercado · analizadas
+                </span>
               </div>
               <button
                 onClick={onClose}
@@ -75,7 +75,7 @@ export function NewsPanel({ open, onClose }: NewsPanelProps) {
               {isLoading ? (
                 <ul className="flex flex-col gap-2">
                   {[0, 1, 2, 3, 4].map((i) => (
-                    <li key={i} className="skeleton h-20 rounded-xl" />
+                    <li key={i} className="skeleton h-24 rounded-xl" />
                   ))}
                 </ul>
               ) : isError ? (
@@ -86,8 +86,7 @@ export function NewsPanel({ open, onClose }: NewsPanelProps) {
                 <div className="p-6 text-center text-sm text-muted">
                   <p>No hay noticias relevantes por ahora.</p>
                   <p className="mt-1 text-xs">
-                    Mostramos solo titulares de fuentes serias o que tocan tu
-                    watchlist.
+                    Mostramos solo noticias de mercado con análisis de impacto.
                   </p>
                 </div>
               ) : (
@@ -122,25 +121,62 @@ function NewsCard({ item, index }: { item: NewsItem; index: number }) {
         rel="noopener noreferrer"
         className="block rounded-xl border border-line bg-base p-3 transition hover:border-accent"
       >
-        <div className="mb-1 flex items-center gap-2 text-xs text-muted">
-          <span className="font-medium text-content">{item.source}</span>
-          <span aria-hidden>·</span>
-          <span>{hace(item.datetime)}</span>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs text-muted">
+            <span className="font-medium text-content">{item.source}</span>
+            <span aria-hidden>·</span>
+            <span>{hace(item.datetime)}</span>
+          </div>
+          <RelevanceBadge value={item.relevance} />
         </div>
+
         <p className="text-sm font-medium leading-snug">{item.headline}</p>
-        {item.related.length > 0 && (
+
+        {item.affected.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {item.related.map((t) => (
-              <span
-                key={t}
-                className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent"
-              >
-                {t}
-              </span>
+            {item.affected.map((a) => (
+              <TickerChip key={a.symbol} affected={a} />
             ))}
           </div>
         )}
       </a>
     </motion.li>
+  );
+}
+
+// Badge de relevancia 1-100. Más alto = más lleno/acentuado.
+function RelevanceBadge({ value }: { value: number }) {
+  const strong = value >= 70;
+  return (
+    <span
+      title="Relevancia de la noticia (1-100)"
+      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
+        strong ? "bg-accent/20 text-accent" : "bg-surface-2 text-muted"
+      }`}
+    >
+      Rel. {value}
+    </span>
+  );
+}
+
+// Chip de acción afectada: flecha + color por sentiment. Si la seguís, borde acento.
+function TickerChip({ affected }: { affected: AffectedTicker }) {
+  const pos = affected.sentiment > 0.05;
+  const neg = affected.sentiment < -0.05;
+  const tone = pos ? "text-up" : neg ? "text-down" : "text-muted";
+  const arrow = pos ? "▲" : neg ? "▼" : "→";
+  return (
+    <span
+      title={`${affected.name} · sentiment ${affected.sentiment.toFixed(2)}${
+        affected.inWatchlist ? " · en tu watchlist" : ""
+      }`}
+      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold ${tone} ${
+        affected.inWatchlist
+          ? "border border-accent bg-accent/10"
+          : "bg-surface-2"
+      }`}
+    >
+      {affected.symbol} <span aria-hidden>{arrow}</span>
+    </span>
   );
 }

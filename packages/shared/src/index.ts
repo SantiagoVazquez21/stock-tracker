@@ -65,7 +65,16 @@ export interface SymbolSearchResult {
   exchange: string;
 }
 
-// Una noticia de mercado ya filtrada por relevancia. La devuelve GET /news.
+// Una acción afectada por una noticia, con su sentiment (-1 a 1: <0 negativo,
+// >0 positivo). inWatchlist = el usuario la sigue (para resaltarla en el panel).
+export interface AffectedTicker {
+  symbol: string;
+  name: string;
+  sentiment: number;
+  inWatchlist: boolean;
+}
+
+// Una noticia de mercado ya analizada. La devuelve GET /news.
 export interface NewsItem {
   id: string;
   headline: string;
@@ -74,6 +83,6 @@ export interface NewsItem {
   url: string;
   datetime: string; // ISO (JSON no tiene Date)
   image: string | null;
-  // Tickers de la watchlist del usuario que menciona la nota (para el tag).
-  related: string[];
+  relevance: number; // 1-100: qué tan relevante es la noticia
+  affected: AffectedTicker[]; // a qué acción(es) afecta y en qué signo
 }
