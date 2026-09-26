@@ -104,9 +104,37 @@ describe("getMarketNews (Marketaux)", () => {
     expect(news[0].affected[0].inWatchlist).toBe(true);
   });
 
-  it("deduplica por uuid (las 3 páginas pueden repetir artículos)", async () => {
-    mockFetch([article({ uuid: "dup", entities: [{ symbol: "MSFT" }] })]);
+  it("deduplica por uuid (las páginas pueden repetir artículos)", async () => {
+    mockFetch([
+      article({ uuid: "dup", entities: [{ symbol: "MSFT", match_score: 70 }] }),
+    ]);
     const news = await getMarketNews("TOKEN", []);
     expect(news).toHaveLength(1);
+  });
+
+  it("descarta las de relevancia < 50 (salvo que toquen la watchlist)", async () => {
+    mockFetch([
+      article({ uuid: "low", entities: [{ symbol: "AAA", match_score: 30 }] }),
+      article({ uuid: "high", entities: [{ symbol: "BBB", match_score: 80 }] }),
+      // baja relevancia pero afecta la watchlist → entra igual.
+      article({
+        uuid: "watch",
+        entities: [{ symbol: "CCC", match_score: 20 }],
+      }),
+    ]);
+    const news = await getMarketNews("TOKEN", ["CCC"]);
+    const ids = news.map((n) => n.id);
+    expect(ids).toContain("high");
+    expect(ids).toContain("watch");
+    expect(ids).not.toContain("low");
+  });
+
+  it("ordena por relevancia (mayor primero) fuera de la watchlist", async () => {
+    mockFetch([
+      article({ uuid: "mid", entities: [{ symbol: "AAA", match_score: 60 }] }),
+      article({ uuid: "top", entities: [{ symbol: "BBB", match_score: 95 }] }),
+    ]);
+    const news = await getMarketNews("TOKEN", []);
+    expect(news.map((n) => n.id)).toEqual(["top", "mid"]);
   });
 });

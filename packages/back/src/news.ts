@@ -4,10 +4,14 @@ import type { AffectedTicker, NewsItem } from "@stock-tracker/shared";
 // Marketaux: noticias financieras que YA vienen con análisis por entidad
 // (relevancia + sentiment + a qué ticker afectan). Reemplaza a Finnhub como fuente.
 const MARKETAUX_URL = "https://api.marketaux.com/v1/news/all";
-// Free = 100 req/día y 3 artículos por request. Traigo 3 páginas (~9 noticias) y
-// cacheo 45 min → como mucho 3 req cada 45 min ≈ 96/día, bajo el límite.
-const PAGES = 3;
-const CACHE_MS = 45 * 60_000;
+// Free = 100 req/día y 3 artículos por request. Traigo 5 páginas (~15 noticias)
+// para tener de dónde filtrar, y cacheo 75 min → 5 req cada 75 min ≈ 96/día.
+const PAGES = 5;
+const CACHE_MS = 75 * 60_000;
+
+// Piso de relevancia (1-100): abajo de esto se descarta, SALVO que afecte a la
+// watchlist del usuario (esas entran siempre). Cumple "solo lo muy importante".
+const MIN_RELEVANCE = 50;
 
 // Solo los campos que usamos (Marketaux devuelve más). Varios vienen nullables.
 const EntitySchema = z.object({
@@ -116,15 +120,21 @@ export async function getMarketNews(
     };
   });
 
-  // Primero las que tocan tu watchlist; dentro de cada grupo, las más nuevas.
-  items.sort((a, b) => {
-    const aw = a.affected.some((e) => e.inWatchlist);
-    const bw = b.affected.some((e) => e.inWatchlist);
-    return (
-      Number(bw) - Number(aw) ||
-      new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
-    );
+  // Filtro de relevancia: solo lo importante. Las que tocan tu watchlist entran
+  // siempre (son relevantes para vos por definición, aunque el score sea bajo).
+  const filtered = items.filter(
+    (it) =>
+      it.relevance >= MIN_RELEVANCE || it.affected.some((e) => e.inWatchlist),
+  );
+
+  // Orden: watchlist primero; luego mayor relevancia; a igual relevancia, más nueva.
+  filtered.sort((a, b) => {
+    const aw = a.affected.some((e) => e.inWatchlist) ? 1 : 0;
+    const bw = b.affected.some((e) => e.inWatchlist) ? 1 : 0;
+    if (aw !== bw) return bw - aw;
+    if (b.relevance !== a.relevance) return b.relevance - a.relevance;
+    return new Date(b.datetime).getTime() - new Date(a.datetime).getTime();
   });
 
-  return items.slice(0, limit);
+  return filtered.slice(0, limit);
 }
