@@ -11,6 +11,7 @@ import {
   addWatch,
   getStoredHistory,
   getWatchlistSummary,
+  listWatches,
   removeWatch,
 } from "./watchlist";
 import {
@@ -20,6 +21,7 @@ import {
   verifyPassword,
 } from "./auth";
 import { searchSymbols } from "./search";
+import { getMarketNews } from "./news";
 
 // Tipos del JWT: qué guardamos en el token (payload) y qué queda en request.user.
 declare module "@fastify/jwt" {
@@ -66,6 +68,7 @@ export async function buildServer(options: {
   logger?: boolean;
   rateLimitMax?: number;
   allowedOrigins?: string[];
+  finnhubApiKey?: string;
 }) {
   const { source } = options;
   const app = Fastify({ logger: options.logger ?? true });
@@ -201,6 +204,17 @@ export async function buildServer(options: {
       }
     },
   );
+
+  // Noticias de mercado ya filtradas por relevancia. Le paso los símbolos del
+  // usuario para taggear/priorizar las que tocan su watchlist. La key de Finnhub
+  // vive acá en el back (nunca en el navegador).
+  app.get("/news", { preHandler: [app.authenticate] }, async (request) => {
+    const watches = await listWatches(request.user.id);
+    return getMarketNews(
+      options.finnhubApiKey,
+      watches.map((w) => w.symbol),
+    );
+  });
 
   // ── Watchlist (protegida: cada usuario ve solo la suya) ───────────────────
   app.get("/watches", { preHandler: [app.authenticate] }, async (request) => {

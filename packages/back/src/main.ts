@@ -42,7 +42,19 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") ?? [
   "http://localhost:5174",
 ];
 
-const app = await buildServer({ source, allowedOrigins, jwtSecret });
+// Key de Finnhub para el panel de noticias. Es OPCIONAL: si falta, /news devuelve
+// [] y el front muestra "sin noticias" (no se cae nada).
+const finnhubApiKey = process.env.FINNHUB_API_KEY;
+if (!finnhubApiKey) {
+  console.warn("⚠️  Sin FINNHUB_API_KEY: el panel de noticias irá vacío.");
+}
+
+const app = await buildServer({
+  source,
+  allowedOrigins,
+  jwtSecret,
+  finnhubApiKey,
+});
 
 // Worker diario: a las 22:00 (tras el cierre del mercado US) actualiza los
 // cierres de todos los símbolos de la watchlist. Corre mientras el proceso del

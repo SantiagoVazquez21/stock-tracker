@@ -4,6 +4,7 @@ import type {
   AuthUser,
   Quote,
   SymbolSearchResult,
+  NewsItem,
 } from "@stock-tracker/shared";
 
 // La URL del back. Configurable por entorno (Vite expone las vars VITE_*),
@@ -62,6 +63,11 @@ export function getQuote(symbol: string) {
 // GET /search?q= → autocomplete de símbolos (por ticker o nombre de empresa).
 export function searchSymbols(q: string) {
   return request<SymbolSearchResult[]>(`/search?q=${encodeURIComponent(q)}`);
+}
+
+// GET /news → noticias de mercado ya filtradas por relevancia (proxy a Finnhub).
+export function getNews() {
+  return request<NewsItem[]>("/news");
 }
 
 // GET /watches/:symbol/history → puntos para el gráfico.

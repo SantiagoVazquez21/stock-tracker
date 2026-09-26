@@ -64,3 +64,16 @@ export interface SymbolSearchResult {
   name: string;
   exchange: string;
 }
+
+// Una noticia de mercado ya filtrada por relevancia. La devuelve GET /news.
+export interface NewsItem {
+  id: string;
+  headline: string;
+  summary: string;
+  source: string;
+  url: string;
+  datetime: string; // ISO (JSON no tiene Date)
+  image: string | null;
+  // Tickers de la watchlist del usuario que menciona la nota (para el tag).
+  related: string[];
+}

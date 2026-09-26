@@ -5,6 +5,7 @@ import { AddWatchForm } from "./components/AddWatchForm";
 import { SummaryStrip } from "./components/SummaryStrip";
 import { WatchList } from "./components/WatchList";
 import { MarketStatus, UpdatedAgo } from "./components/MarketStatus";
+import { NewsPanel } from "./components/NewsPanel";
 
 // Lazy: el detalle (que arrastra Recharts) y la paleta (cmdk) se cargan recién
 // cuando se usan — no en la carga inicial. Bajan el peso del bundle de entrada.
@@ -28,6 +29,8 @@ export function App() {
   const [selected, setSelected] = useState<string | null>(null);
   // Si el command palette (⌘K / Ctrl+K) está abierto.
   const [cmdOpen, setCmdOpen] = useState(false);
+  // Si el panel de noticias está abierto.
+  const [newsOpen, setNewsOpen] = useState(false);
 
   // Atajo global: ⌘K (mac) o Ctrl+K (win/linux) abre/cierra la paleta.
   useEffect(() => {
@@ -62,6 +65,26 @@ export function App() {
                 <UpdatedAgo />
                 <MarketStatus />
                 <button
+                  onClick={() => setNewsOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-muted transition hover:text-content"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M4 5h13v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z" />
+                    <path d="M17 8h2a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1" />
+                    <path d="M7 8h7M7 11h7M7 14h4" />
+                  </svg>
+                  Noticias
+                </button>
+                <button
                   onClick={() => setCmdOpen(true)}
                   className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-muted transition hover:text-content"
                 >
@@ -88,6 +111,10 @@ export function App() {
           </div>
         </main>
       </div>
+
+      {/* Panel de noticias (siempre montado: así la animación de salida corre al
+          cerrarlo; internamente no pollea si está cerrado). */}
+      <NewsPanel open={newsOpen} onClose={() => setNewsOpen(false)} />
 
       {/* Solo se monta (y baja su chunk) al abrir la paleta. */}
       {cmdOpen && (
