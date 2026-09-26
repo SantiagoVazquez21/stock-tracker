@@ -25,7 +25,8 @@ const SOURCE_ALLOWLIST = [
 const MARKET_KEYWORDS = [
   "stock",
   "shares",
-  "market",
+  "stock market",
+  "markets", // plural a propósito: NO matchea "job market" (singular)
   "nasdaq",
   "dow jones",
   "s&p",
@@ -66,6 +67,31 @@ const MARKET_KEYWORDS = [
   "semiconductor",
   "crude",
   "tariff",
+];
+
+// Temas RUIDO: si aparecen, la nota se descarta aunque matchee algo de mercado.
+// Sacan lifestyle/carrera (CNBC publica mucho) y geopolítica pura. Lista TUNEABLE.
+const DENYLIST = [
+  "job market",
+  "hiring",
+  "career",
+  "side hustle",
+  "how i ",
+  "i tried",
+  "things to do",
+  "recipe",
+  "run club",
+  "workout",
+  "horoscope",
+  "celebrity",
+  "royal",
+  "vacation",
+  "diplomacy",
+  "united nations",
+  "un speech",
+  "summit",
+  "missile",
+  "houthi",
 ];
 
 // Finnhub devuelve la fecha como unix (segundos) y `related` como CSV de tickers.
@@ -131,9 +157,12 @@ export async function getMarketNews(
         const text = `${n.headline} ${n.summary}`.toLowerCase();
         const isMarket =
           related.length > 0 || MARKET_KEYWORDS.some((k) => text.includes(k));
+        const denied = DENYLIST.some((k) => text.includes(k));
         // "Importante y de mercado" = toca tu watchlist, O (fuente seria Y es una
-        // nota de mercado). Con esto se caen política/mundo/lifestyle de Reuters/CNBC.
-        const relevant = matched.length > 0 || (inAllowlist && isMarket);
+        // nota de mercado). La denylist descarta ruido (lifestyle/geopolítica)
+        // aunque haya matcheado algo. Con esto se caen política/mundo/lifestyle.
+        const relevant =
+          !denied && (matched.length > 0 || (inAllowlist && isMarket));
         return { n, matched, relevant };
       })
       .filter((x) => x.relevant)

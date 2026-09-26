@@ -114,9 +114,27 @@ describe("getMarketNews (filtro de relevancia de mercado)", () => {
 
   it("convierte el datetime unix a ISO", async () => {
     mockFetch([
-      raw({ id: 10, headline: "Market rally continues", datetime: 1700000000 }),
+      raw({ id: 10, headline: "Stocks rally continues", datetime: 1700000000 }),
     ]);
     const news = await getMarketNews("KEY", []);
     expect(news[0].datetime).toBe(new Date(1700000000 * 1000).toISOString());
+  });
+
+  it("descarta ruido de la denylist (lifestyle/carrera) aunque la fuente sea seria", async () => {
+    mockFetch([
+      raw({
+        id: 11,
+        headline: "The iced coffee debate and everything wrong with hiring",
+      }),
+      raw({ id: 12, headline: "How I built a $640K side hustle run club" }),
+    ]);
+    expect(await getMarketNews("KEY", [])).toHaveLength(0);
+  });
+
+  it('no cuenta "job market" como noticia de mercado', async () => {
+    mockFetch([
+      raw({ id: 13, headline: "The blue-collar AI job market is booming" }),
+    ]);
+    expect(await getMarketNews("KEY", [])).toHaveLength(0);
   });
 });
