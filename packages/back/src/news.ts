@@ -1,12 +1,11 @@
 import { z } from "zod";
 import type { NewsItem } from "@stock-tracker/shared";
 
-// Feed general de mercado de Finnhub (una sola llamada, sin símbolo).
+// Feed general de Finnhub. OJO: "general" trae MUCHO más que mercado (política,
+// mundo, lifestyle), así que el filtro de abajo es el que hace el trabajo fino.
 const FINNHUB_NEWS_URL = "https://finnhub.io/api/v1/news?category=general";
 
-// Fuentes que consideramos "de gran relevancia". El match es por substring en
-// minúsculas para tolerar variaciones ("Reuters", "www.reuters.com", etc.).
-// Es una lista TUNEABLE: si el feed real queda muy vacío o muy ruidoso, se ajusta.
+// Fuentes serias (match por substring en minúsculas, tolera "Reuters" / "reuters.com").
 const SOURCE_ALLOWLIST = [
   "reuters",
   "bloomberg",
@@ -21,22 +20,52 @@ const SOURCE_ALLOWLIST = [
   "forbes",
 ];
 
-// Palabras que suelen marcar noticias que mueven el mercado. Solo suben el
-// puntaje (para ordenar/priorizar), no son un filtro por sí solas.
-const KEYWORDS = [
+// Términos que marcan que una nota ES de mercado/negocios. Acá SÍ filtran: una nota
+// de Reuters sobre la ONU no tiene ninguno → se descarta. Lista TUNEABLE.
+const MARKET_KEYWORDS = [
+  "stock",
+  "shares",
+  "market",
+  "nasdaq",
+  "dow jones",
+  "s&p",
+  "wall street",
   "earnings",
+  "revenue",
+  "profit",
   "guidance",
-  "upgrade",
-  "downgrade",
+  "forecast",
+  "outlook",
+  "dividend",
+  "buyback",
+  "ipo",
   "merger",
   "acquisition",
-  "fed",
-  "interest rate",
-  "inflation",
-  "sec",
-  "lawsuit",
+  "takeover",
+  "antitrust",
   "bankruptcy",
-  "ipo",
+  "layoffs",
+  "fed",
+  "federal reserve",
+  "interest rate",
+  "rate cut",
+  "rate hike",
+  "inflation",
+  "cpi",
+  "gdp",
+  "treasury",
+  "bond yield",
+  "downgrade",
+  "upgrade",
+  "analyst",
+  "valuation",
+  "etf",
+  "selloff",
+  "quarterly",
+  "shareholder",
+  "semiconductor",
+  "crude",
+  "tariff",
 ];
 
 // Finnhub devuelve la fecha como unix (segundos) y `related` como CSV de tickers.
@@ -100,10 +129,12 @@ export async function getMarketNews(
         const src = n.source.toLowerCase();
         const inAllowlist = SOURCE_ALLOWLIST.some((a) => src.includes(a));
         const text = `${n.headline} ${n.summary}`.toLowerCase();
-        const keywordHits = KEYWORDS.filter((k) => text.includes(k)).length;
-        // "Importante" = fuente seria O toca tu watchlist. Los keywords solo ordenan.
-        const relevant = inAllowlist || matched.length > 0;
-        return { n, matched, relevant, keywordHits };
+        const isMarket =
+          related.length > 0 || MARKET_KEYWORDS.some((k) => text.includes(k));
+        // "Importante y de mercado" = toca tu watchlist, O (fuente seria Y es una
+        // nota de mercado). Con esto se caen política/mundo/lifestyle de Reuters/CNBC.
+        const relevant = matched.length > 0 || (inAllowlist && isMarket);
+        return { n, matched, relevant };
       })
       .filter((x) => x.relevant)
       // Dedupe: la misma historia sale en muchos lados. Normalizo el título.
@@ -116,9 +147,11 @@ export async function getMarketNews(
         seen.add(key);
         return true;
       })
-      // Más nuevas primero (es un feed "en vivo"); a igual fecha, más keywords arriba.
+      // Primero las de tu watchlist; dentro de cada grupo, las más nuevas arriba.
       .sort(
-        (a, b) => b.n.datetime - a.n.datetime || b.keywordHits - a.keywordHits,
+        (a, b) =>
+          Number(b.matched.length > 0) - Number(a.matched.length > 0) ||
+          b.n.datetime - a.n.datetime,
       )
       .slice(0, limit)
       .map(({ n, matched }) => ({

@@ -5,7 +5,7 @@ import { getMarketNews, __clearNewsCache } from "./news";
 function raw(over: Partial<Record<string, unknown>> & { id: number }) {
   return {
     id: over.id,
-    headline: over.headline ?? "Headline",
+    headline: over.headline ?? "Stocks rally on the day",
     source: over.source ?? "Reuters",
     url: over.url ?? `https://example.com/${over.id}`,
     datetime: over.datetime ?? 1000,
@@ -31,26 +31,35 @@ function mockFetch(items: unknown[]) {
 beforeEach(() => __clearNewsCache());
 afterEach(() => vi.unstubAllGlobals());
 
-describe("getMarketNews (filtro de relevancia)", () => {
+describe("getMarketNews (filtro de relevancia de mercado)", () => {
   it("devuelve [] si no hay API key (feature degrada, no rompe)", async () => {
     expect(await getMarketNews(undefined, [])).toEqual([]);
   });
 
-  it("deja solo fuentes serias y descarta el resto", async () => {
+  it("descarta noticias que NO son de mercado aunque la fuente sea seria", async () => {
     mockFetch([
-      raw({ id: 1, headline: "Fed raises rates", source: "Reuters" }),
-      raw({ id: 2, headline: "Random blog post", source: "SomeBlog" }),
+      // Reuters, pero es política/mundo → sin términos de mercado ni ticker → fuera.
+      raw({ id: 1, headline: "China pushes back at US in UN speech" }),
+      // Reuters y sí es de mercado → queda.
+      raw({ id: 2, headline: "Fed holds interest rate steady" }),
     ]);
     const news = await getMarketNews("KEY", []);
     expect(news).toHaveLength(1);
-    expect(news[0].source).toBe("Reuters");
+    expect(news[0].headline).toBe("Fed holds interest rate steady");
   });
 
-  it("incluye y taggea noticias que tocan la watchlist, aunque la fuente no esté en la lista", async () => {
+  it("descarta noticias de mercado si la fuente NO es seria", async () => {
+    mockFetch([
+      raw({ id: 3, headline: "Stocks rally big", source: "RandomBlog" }),
+    ]);
+    expect(await getMarketNews("KEY", [])).toHaveLength(0);
+  });
+
+  it("incluye y taggea las que tocan la watchlist, aun de fuente no seria", async () => {
     mockFetch([
       raw({
-        id: 3,
-        headline: "Apple ships a thing",
+        id: 4,
+        headline: "Company ships a thing",
         source: "SomeBlog",
         related: "AAPL,MSFT",
       }),
@@ -61,31 +70,52 @@ describe("getMarketNews (filtro de relevancia)", () => {
     expect(news[0].related).toEqual(["AAPL"]);
   });
 
-  it("deduplica la misma historia por título normalizado", async () => {
+  it("mantiene notas taggeadas a un ticker desde fuente seria aunque no tengan keyword", async () => {
     mockFetch([
-      raw({ id: 4, headline: "Same Story", source: "Reuters", datetime: 2000 }),
       raw({
         id: 5,
-        headline: "same  story!",
-        source: "Bloomberg",
-        datetime: 1000,
+        headline: "Apple faces patent verdict",
+        source: "CNBC",
+        related: "AAPL",
       }),
     ]);
+    // Sin watchlist: no hay tag, pero al estar taggeada a un ticker y ser fuente
+    // seria, se considera de mercado y queda.
     const news = await getMarketNews("KEY", []);
     expect(news).toHaveLength(1);
+    expect(news[0].related).toEqual([]);
   });
 
-  it("ordena de más nueva a más vieja", async () => {
+  it("deduplica la misma historia por título normalizado", async () => {
     mockFetch([
-      raw({ id: 6, headline: "Old", source: "Reuters", datetime: 1000 }),
-      raw({ id: 7, headline: "New", source: "Reuters", datetime: 5000 }),
+      raw({ id: 6, headline: "Stocks rally today", source: "Reuters" }),
+      raw({ id: 7, headline: "stocks  rally today!", source: "Bloomberg" }),
     ]);
-    const news = await getMarketNews("KEY", []);
-    expect(news.map((n) => n.headline)).toEqual(["New", "Old"]);
+    expect(await getMarketNews("KEY", [])).toHaveLength(1);
+  });
+
+  it("prioriza las de la watchlist y, dentro de cada grupo, las más nuevas", async () => {
+    mockFetch([
+      raw({ id: 8, headline: "Nasdaq slips", datetime: 5000 }),
+      raw({
+        id: 9,
+        headline: "AAPL earnings beat",
+        datetime: 1000,
+        related: "AAPL",
+      }),
+    ]);
+    const news = await getMarketNews("KEY", ["AAPL"]);
+    // La de AAPL primero aunque sea más vieja (es de la watchlist).
+    expect(news.map((n) => n.headline)).toEqual([
+      "AAPL earnings beat",
+      "Nasdaq slips",
+    ]);
   });
 
   it("convierte el datetime unix a ISO", async () => {
-    mockFetch([raw({ id: 8, source: "Reuters", datetime: 1700000000 })]);
+    mockFetch([
+      raw({ id: 10, headline: "Market rally continues", datetime: 1700000000 }),
+    ]);
     const news = await getMarketNews("KEY", []);
     expect(news[0].datetime).toBe(new Date(1700000000 * 1000).toISOString());
   });
